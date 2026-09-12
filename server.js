@@ -191,8 +191,8 @@ const DATABASE_URL = process.env.DATABASE_URL;
 // =====================================================
 
 const validAccounts = {
-    "1001": process.env.PASSWORD_1001,
-    "1002": process.env.PASSWORD_1002,
+    "admin": process.env.PASSWORD_ADMIN,
+    "mintai": process.env.PASSWORD_MINTAI,
     "1003": process.env.PASSWORD_1003
 };
 
@@ -205,7 +205,7 @@ const validAccounts = {
 // =====================================================
 
 const ADMIN_USERS = new Set(
-    (process.env.ADMIN_USERS || '1001')
+    (process.env.ADMIN_USERS || 'admin')
         .split(',')
         .map(value => value.trim())
         .filter(Boolean)
