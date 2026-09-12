@@ -4,116 +4,418 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>名泰化學 - 營運控制台 (即時同步版)</title>
+
   <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9; padding: 20px; margin: 0; }
-    h2 { text-align: center; color: #333; margin-bottom: 15px; }
-    
-    /* === 新增：分類標籤 (Tabs) 樣式 === */
-    .tabs-container {
-      display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-bottom: 25px;
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f4f6f9;
+      padding: 20px;
+      margin: 0;
     }
+
+    h2 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 15px;
+    }
+
+    .tabs-container {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 25px;
+    }
+
     .tab-btn {
-      padding: 8px 18px; border: 2px solid #1c8ebf; background-color: transparent; 
-      color: #1c8ebf; border-radius: 20px; cursor: pointer; font-size: 15px; font-weight: bold; 
+      padding: 8px 18px;
+      border: 2px solid #1c8ebf;
+      background-color: transparent;
+      color: #1c8ebf;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: bold;
       transition: all 0.3s;
     }
-    .tab-btn:hover, .tab-btn.active {
-      background-color: #1c8ebf; color: white; box-shadow: 0 4px 10px rgba(28, 142, 191, 0.3);
+
+    .tab-btn:hover,
+    .tab-btn.active {
+      background-color: #1c8ebf;
+      color: white;
+      box-shadow: 0 4px 10px rgba(28, 142, 191, 0.3);
     }
 
-    /* 桶槽網格與卡片樣式 */
-    .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; max-width: 1500px; margin: 0 auto; }
-    .tank-card { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); text-align: center; display: flex; flex-direction: column; align-items: center; position: relative; }
-    .tank-no { font-size: 18px; font-weight: 900; color: #2c3e50; background-color: #ecf0f1; padding: 4px 12px; border-radius: 20px; margin-bottom: 5px; }
-    .product-name { font-size: 16px; font-weight: bold; color: #16a085; margin-bottom: 12px; }
-    .tank-wrapper { height: 200px; display: flex; align-items: flex-end; margin-bottom: 15px; }
-    .tank-style { width: 100px; height: 180px; border: 3px solid #555; border-radius: 0 0 16px 16px; background-color: #eef2f5; display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; }
-    .liquid-style { width: 100%; background-color: #3498db; transition: height 0.3s ease-out, background-color 0.5s; }
-    .info-text { font-size: 14px; color: #333; margin: 2px 0; font-weight: bold; }
-    
-    /* 廠商與控制區樣式 */
-    .vendor-section { width: 100%; margin: 10px 0; border-top: 1px dashed #ccc; padding-top: 10px; }
-    .vendor-input-group { display: flex; gap: 5px; justify-content: center; margin-bottom: 8px; }
-    .vendor-input-group select { padding: 4px; border: 1px solid #ccc; border-radius: 4px; outline: none; flex-grow: 1; }
-    .vendor-input-group button { background-color: #16a085; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 13px; }
-    .vendor-input-group button:hover { background-color: #12876f; }
-    .vendor-tags { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; min-height: 24px; }
-    .vendor-chip { background-color: #e8f8f5; color: #0e6655; border: 1px solid #1abc9c; padding: 4px 10px; border-radius: 14px; font-size: 14px; display: flex; align-items: center; gap: 6px; }
-    .vendor-chip span.remove-btn { cursor: pointer; color: #e74c3c; font-weight: bold; font-size: 14px; margin-left: 2px; }
-    .empty-vendor { font-size: 12px; color: #aaa; margin-top: 4px; }
-    .time-text { font-size: 12px; color: #95a5a6; margin-bottom: 10px; white-space: nowrap; }
-    .card-controls { margin-top: 5px; width: 100%; }
-    .card-controls input { width: 80px; padding: 8px; font-size: 18px; font-weight: bold; color: #2c3e50; border: 2px solid #bdc3c7; border-radius: 6px; text-align: center; outline: none; transition: border-color 0.3s; }
-    .card-controls input:focus { border-color: #3498db; }
+    .grid-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 20px;
+      max-width: 1500px;
+      margin: 0 auto;
+    }
 
-    /* === 企業級登入畫面樣式 === */
+    .tank-card {
+      background: white;
+      border-radius: 12px;
+      padding: 15px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+
+    .tank-no {
+      font-size: 18px;
+      font-weight: 900;
+      color: #2c3e50;
+      background-color: #ecf0f1;
+      padding: 4px 12px;
+      border-radius: 20px;
+      margin-bottom: 5px;
+    }
+
+    .product-name {
+      font-size: 16px;
+      font-weight: bold;
+      color: #16a085;
+      margin-bottom: 12px;
+    }
+
+    .tank-wrapper {
+      height: 200px;
+      display: flex;
+      align-items: flex-end;
+      margin-bottom: 15px;
+    }
+
+    .tank-style {
+      width: 100px;
+      height: 180px;
+      border: 3px solid #555;
+      border-radius: 0 0 16px 16px;
+      background-color: #eef2f5;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      overflow: hidden;
+    }
+
+    .liquid-style {
+      width: 100%;
+      background-color: #3498db;
+      transition: height 0.3s ease-out, background-color 0.5s;
+    }
+
+    .info-text {
+      font-size: 14px;
+      color: #333;
+      margin: 2px 0;
+      font-weight: bold;
+    }
+
+    .vendor-section {
+      width: 100%;
+      margin: 10px 0;
+      border-top: 1px dashed #ccc;
+      padding-top: 10px;
+    }
+
+    .vendor-input-group {
+      display: flex;
+      gap: 5px;
+      justify-content: center;
+      margin-bottom: 8px;
+    }
+
+    .vendor-input-group select {
+      padding: 4px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      outline: none;
+      flex-grow: 1;
+    }
+
+    .vendor-input-group button {
+      background-color: #16a085;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 4px 8px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .vendor-input-group button:hover {
+      background-color: #12876f;
+    }
+
+    .vendor-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      justify-content: center;
+      min-height: 24px;
+    }
+
+    .vendor-chip {
+      background-color: #e8f8f5;
+      color: #0e6655;
+      border: 1px solid #1abc9c;
+      padding: 4px 10px;
+      border-radius: 14px;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .vendor-chip span.remove-btn {
+      cursor: pointer;
+      color: #e74c3c;
+      font-weight: bold;
+      font-size: 14px;
+      margin-left: 2px;
+    }
+
+    .empty-vendor {
+      font-size: 12px;
+      color: #aaa;
+      margin-top: 4px;
+    }
+
+    .time-text {
+      font-size: 12px;
+      color: #95a5a6;
+      margin-bottom: 10px;
+      white-space: nowrap;
+    }
+
+    .card-controls {
+      margin-top: 5px;
+      width: 100%;
+    }
+
+    .card-controls input {
+      width: 80px;
+      padding: 8px;
+      font-size: 18px;
+      font-weight: bold;
+      color: #2c3e50;
+      border: 2px solid #bdc3c7;
+      border-radius: 6px;
+      text-align: center;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+
+    .card-controls input:focus {
+      border-color: #3498db;
+    }
+
     #login-overlay {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background-color: #f4f7f9; z-index: 9999;
-      display: flex; justify-content: center; align-items: center;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #f4f7f9;
+      z-index: 9999;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
-    .login-card {
-      background: white; width: 90%; max-width: 380px; padding: 40px 30px; border-radius: 10px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.08); border-top: 5px solid #1c8ebf;
-    }
-    .login-logo { text-align: center; margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 20px; }
-    .login-logo .logo-text { font-size: 24px; color: #005b8f; font-weight: bold; letter-spacing: 1px; display: flex; align-items: center; justify-content: center; gap: 8px; }
-    .login-logo .logo-sub { font-size: 12px; color: #7f8c8d; margin-top: 5px; }
-    .login-card h3 { text-align: left; margin-bottom: 5px; font-size: 24px; color: #2c3e50; }
-    .login-card p { text-align: left; color: #7f8c8d; font-size: 14px; margin-bottom: 25px; }
-    .login-input-group { text-align: left; margin-bottom: 20px; }
-    .login-input-group label { display: block; font-size: 14px; color: #34495e; margin-bottom: 8px; font-weight: bold; }
-    .login-input-group input { 
-      width: 100%; padding: 12px 15px; border: 1px solid #dcdde1; border-radius: 6px; 
-      font-size: 16px; box-sizing: border-box; outline: none; transition: 0.3s;
-    }
-    .login-input-group input:focus { border-color: #1c8ebf; box-shadow: 0 0 5px rgba(28, 142, 191, 0.3); }
-    .login-btn {
-      width: 100%; background-color: #1c8ebf; color: white; border: none;
-      padding: 14px; border-radius: 6px; font-size: 16px; cursor: pointer; transition: 0.3s; font-weight: bold;
-    }
-    .login-btn:hover { background-color: #15739b; }
-    #login-error { color: #e74c3c; font-size: 13px; margin-bottom: 15px; display: none; text-align: center; font-weight: bold; }
 
-    /* === 手機版專屬設定 (維持一排兩個) === */
+    .login-card {
+      background: white;
+      width: 90%;
+      max-width: 380px;
+      padding: 40px 30px;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+      border-top: 5px solid #1c8ebf;
+    }
+
+    .login-logo {
+      text-align: center;
+      margin-bottom: 30px;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 20px;
+    }
+
+    .login-logo .logo-text {
+      font-size: 24px;
+      color: #005b8f;
+      font-weight: bold;
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .login-logo .logo-sub {
+      font-size: 12px;
+      color: #7f8c8d;
+      margin-top: 5px;
+    }
+
+    .login-card h3 {
+      text-align: left;
+      margin-bottom: 5px;
+      font-size: 24px;
+      color: #2c3e50;
+    }
+
+    .login-card p {
+      text-align: left;
+      color: #7f8c8d;
+      font-size: 14px;
+      margin-bottom: 25px;
+    }
+
+    .login-input-group {
+      text-align: left;
+      margin-bottom: 20px;
+    }
+
+    .login-input-group label {
+      display: block;
+      font-size: 14px;
+      color: #34495e;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+
+    .login-input-group input {
+      width: 100%;
+      padding: 12px 15px;
+      border: 1px solid #dcdde1;
+      border-radius: 6px;
+      font-size: 16px;
+      box-sizing: border-box;
+      outline: none;
+      transition: 0.3s;
+    }
+
+    .login-input-group input:focus {
+      border-color: #1c8ebf;
+      box-shadow: 0 0 5px rgba(28, 142, 191, 0.3);
+    }
+
+    .login-btn {
+      width: 100%;
+      background-color: #1c8ebf;
+      color: white;
+      border: none;
+      padding: 14px;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: 0.3s;
+      font-weight: bold;
+    }
+
+    .login-btn:hover {
+      background-color: #15739b;
+    }
+
+    #login-error {
+      color: #e74c3c;
+      font-size: 13px;
+      margin-bottom: 15px;
+      display: none;
+      text-align: center;
+      font-weight: bold;
+    }
+
     @media (max-width: 768px) {
-      .grid-container { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-      .tank-card { padding: 10px; }
-      .tank-style { width: 70px; height: 140px; }
-      .tank-no { font-size: 15px; }
-      .tabs-container { gap: 6px; }
-      .tab-btn { padding: 6px 12px; font-size: 13px; }
+      .grid-container {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+      }
+
+      .tank-card {
+        padding: 10px;
+      }
+
+      .tank-style {
+        width: 70px;
+        height: 140px;
+      }
+
+      .tank-no {
+        font-size: 15px;
+      }
+
+      .tabs-container {
+        gap: 6px;
+      }
+
+      .tab-btn {
+        padding: 6px 12px;
+        font-size: 13px;
+      }
     }
   </style>
 </head>
+
 <body>
 
-  <!-- 登入畫面防護罩 -->
   <div id="login-overlay">
     <div class="login-card">
+
       <div class="login-logo">
-        <div class="logo-text"><span style="font-size: 28px; color: #f39c12;">⬡</span> 名泰化學材料</div>
-        <div class="logo-sub">Ming Tai Chemical Materials Co., Ltd.</div>
+        <div class="logo-text">
+          <span style="font-size: 28px; color: #f39c12;">⬡</span>
+          名泰化學材料
+        </div>
+        <div class="logo-sub">
+          Ming Tai Chemical Materials Co., Ltd.
+        </div>
       </div>
+
       <h3>登入</h3>
       <p>請輸入員工編號登入營運控制台</p>
+
       <div class="login-input-group">
         <label>員工編號</label>
-        <input type="text" id="username" placeholder="👤 例: 1001" onkeypress="handleEnter(event)">
+        <input
+          type="text"
+          id="username"
+          placeholder="👤 例: 1001"
+          onkeypress="handleEnter(event)"
+        >
       </div>
+
       <div class="login-input-group">
         <label>密碼</label>
-        <input type="password" id="password" placeholder="🔒 請輸入密碼" onkeypress="handleEnter(event)">
+        <input
+          type="password"
+          id="password"
+          placeholder="🔒 請輸入密碼"
+          onkeypress="handleEnter(event)"
+        >
       </div>
-      <div id="login-error">⚠️ 帳號或密碼錯誤，請重新輸入！</div>
-      <button class="login-btn" onclick="checkLogin()">登入 ➔</button>
+
+      <div id="login-error">
+        ⚠️ 帳號或密碼錯誤，請重新輸入！
+      </div>
+
+      <button
+        class="login-btn"
+        onclick="checkLogin()"
+      >
+        登入 ➔
+      </button>
+
     </div>
   </div>
 
-  <!-- 主畫面 -->
+
   <h2>名泰化學 - 桶槽即時監控</h2>
-  
-  <!-- === 新增：分類標籤按鈕區 === -->
+
   <div class="tabs-container">
     <button class="tab-btn active" onclick="filterCategory('全部')">全部</button>
     <button class="tab-btn" onclick="filterCategory('硫酸')">硫酸</button>
@@ -125,269 +427,1035 @@
 
   <div id="dashboard" class="grid-container"></div>
 
-  <!-- 載入 Socket.io -->
+
   <script src="/socket.io/socket.io.js"></script>
 
   <script>
-    // --- 登入驗證邏輯 ---
-    async function checkLogin() {
 
-  const user = document.getElementById('username').value.trim();
-  const pass = document.getElementById('password').value;
+    let socket = null;
 
-  const errorMsg = document.getElementById('login-error');
 
-  try {
+    const vendorList = [
+      "台塑食",
+      "台塑工",
+      "東南",
+      "中華化學",
+      "華夏",
+      "台紙",
+      "義芳",
+      "合禮",
+      "貝民",
+      "西一",
+      "進口",
+      "晴揚",
+      "元成",
+      "其他"
+    ];
 
-    const response = await fetch('/api/login', {
-
-      method: 'POST',
-
-      headers: {
-        'Content-Type': 'application/json'
-      },
-
-      body: JSON.stringify({
-        username: user,
-        password: pass
-      })
-
-    });
-
-    const result = await response.json();
-
-    if (result.success) {
-
-      document.getElementById('login-overlay').style.display = 'none';
-
-      errorMsg.style.display = 'none';
-
-    } else {
-
-      errorMsg.style.display = 'block';
-
-    }
-
-  } catch (error) {
-
-    console.error(error);
-
-    errorMsg.textContent = '⚠️ 無法連線至伺服器，請稍後再試！';
-
-    errorMsg.style.display = 'block';
-
-  }
-
-}
-
-    function handleEnter(e) {
-      if (e.key === 'Enter') checkLogin();
-    }
-
-    // --- 桶槽系統邏輯 ---
-    const socket = io();
-    const vendorList = ["台塑食", "台塑工", "東南", "中華化學", "華夏", "台紙", "義芳", "合禮", "貝民", "西一", "進口", "晴揚", "元成","其他"];
 
     const tankConfig = [
+
       { tankNo: "TK-01", product: "液鹼 (45%)", maxLevel: 60, currentLevel: 0 },
       { tankNo: "TK-02", product: "液鹼 (45%)", maxLevel: 60, currentLevel: 0 },
       { tankNo: "TK-37", product: "液鹼45%", maxLevel: 60, currentLevel: 0 },
       { tankNo: "TK-45", product: "液鹼45%", maxLevel: 30, currentLevel: 0 },
+
       { tankNo: "TK-06", product: "鹽酸 (32%)", maxLevel: 60, currentLevel: 0 },
       { tankNo: "TK-07", product: "鹽酸 (32%)", maxLevel: 60, currentLevel: 0 },
       { tankNo: "TK-08", product: "鹽酸 (32%)", maxLevel: 60, currentLevel: 0 },
       { tankNo: "TK-09", product: "鹽酸 (32%)", maxLevel: 60, currentLevel: 0 },
       { tankNo: "TK-13", product: "鹽酸 (HCl)", maxLevel: 90, currentLevel: 0 },
+
       { tankNo: "TK-12", product: "純水", maxLevel: 90, currentLevel: 0 },
+
       { tankNo: "TK-10", product: "硝酸 (40%)", maxLevel: 80, currentLevel: 0 },
       { tankNo: "TK-41", product: "硝酸 (55%)", maxLevel: 30, currentLevel: 0 },
       { tankNo: "TK-42", product: "硝酸 (50%)", maxLevel: 30, currentLevel: 0 },
+
       { tankNo: "TK-03", product: "硫酸 (50%)", maxLevel: 60, currentLevel: 0 },
       { tankNo: "TK-05", product: "硫酸 (50%)", maxLevel: 60, currentLevel: 0 },
       { tankNo: "TK-11", product: "硫酸 (50%)", maxLevel: 80, currentLevel: 0 },
       { tankNo: "TK-16", product: "硫酸 (50%)", maxLevel: 90, currentLevel: 0 },
       { tankNo: "TK-39", product: "BM硫酸 (60%)", maxLevel: 60, currentLevel: 0 },
       { tankNo: "TK-40", product: "硫酸 (98%)", maxLevel: 60, currentLevel: 0 },
+
       { tankNo: "TK-38", product: "氯化鐵", maxLevel: 60, currentLevel: 0 },
       { tankNo: "TK-15", product: "碳酸鈉", maxLevel: 60, currentLevel: 0 }
+
     ];
 
-    let tankVendorsData = {}; 
+
+    let tankVendorsData = {};
+
     const dashboard = document.getElementById("dashboard");
-    const vendorOptionsHTML = vendorList.map(vendor => `<option value="${vendor}">${vendor}</option>`).join("");
+
+    const vendorOptionsHTML =
+      vendorList
+        .map(vendor => `<option value="${vendor}">${vendor}</option>`)
+        .join("");
+
     let currentDay = new Date().getDate();
 
-    // === 新增：判斷該桶槽屬於哪個分類 ===
-    function getCategory(productName) {
-      if (productName.includes("硫酸")) return "硫酸";
-      if (productName.includes("鹽酸")) return "鹽酸";
-      if (productName.includes("硝酸")) return "硝酸";
-      if (productName.includes("液鹼")) return "液鹼";
-      return "其它";
+
+    // ==========================================
+    // 登入
+    // ==========================================
+
+    async function checkLogin() {
+
+      const user =
+        document.getElementById('username').value.trim();
+
+      const pass =
+        document.getElementById('password').value;
+
+      const errorMsg =
+        document.getElementById('login-error');
+
+
+      if (!user || !pass) {
+
+        errorMsg.textContent =
+          '⚠️ 請輸入員工編號與密碼';
+
+        errorMsg.style.display = 'block';
+
+        return;
+      }
+
+
+      try {
+
+        const response = await fetch('/api/login', {
+
+          method: 'POST',
+
+          headers: {
+            'Content-Type': 'application/json'
+          },
+
+          body: JSON.stringify({
+            username: user,
+            password: pass
+          })
+
+        });
+
+
+        const result = await response.json();
+
+
+        if (
+          response.ok &&
+          result.success &&
+          result.token
+        ) {
+
+          sessionStorage.setItem(
+            'tank_token',
+            result.token
+          );
+
+
+          errorMsg.style.display = 'none';
+
+
+          document.getElementById(
+            'login-overlay'
+          ).style.display = 'none';
+
+
+          connectSocket(result.token);
+
+        } else {
+
+          errorMsg.textContent =
+            '⚠️ 帳號或密碼錯誤，請重新輸入！';
+
+          errorMsg.style.display = 'block';
+
+        }
+
+
+      } catch (error) {
+
+        console.error(error);
+
+        errorMsg.textContent =
+          '⚠️ 無法連線至伺服器，請稍後再試！';
+
+        errorMsg.style.display = 'block';
+
+      }
+
     }
+
+
+    function handleEnter(e) {
+
+      if (e.key === 'Enter') {
+        checkLogin();
+      }
+
+    }
+
+
+
+    // ==========================================
+    // Socket.IO
+    // ==========================================
+
+    function connectSocket(token) {
+
+      if (socket) {
+
+        socket.disconnect();
+
+      }
+
+
+      socket = io({
+
+        auth: {
+          token: token
+        }
+
+      });
+
+
+      socket.on('connect', () => {
+
+        console.log(
+          '✅ 即時同步伺服器連線成功'
+        );
+
+      });
+
+
+      socket.on(
+        'connect_error',
+        (error) => {
+
+          console.error(
+            'Socket連線失敗:',
+            error.message
+          );
+
+
+          if (
+            error.message === '未登入' ||
+            error.message === '登入已失效'
+          ) {
+
+            sessionStorage.removeItem(
+              'tank_token'
+            );
+
+            document.getElementById(
+              'login-overlay'
+            ).style.display = 'flex';
+
+
+            const errorMsg =
+              document.getElementById(
+                'login-error'
+              );
+
+
+            errorMsg.textContent =
+              '⚠️ 登入已失效，請重新登入';
+
+
+            errorMsg.style.display =
+              'block';
+
+          }
+
+        }
+      );
+
+
+      socket.on(
+        'init_data',
+        (serverState) => {
+
+          for (let tNo in serverState) {
+
+            const data =
+              serverState[tNo];
+
+
+            applyChange(
+
+              tNo,
+
+              data.level,
+
+              data.vendors || [],
+
+              data.timeStr || "",
+
+              true
+
+            );
+
+          }
+
+        }
+      );
+
+
+      socket.on(
+        'sync_tank',
+        (data) => {
+
+          applyChange(
+
+            data.tankNo,
+
+            data.level,
+
+            data.vendors || [],
+
+            data.timeStr || "",
+
+            true
+
+          );
+
+        }
+      );
+
+    }
+
+
+
+    // ==========================================
+    // 桶槽分類
+    // ==========================================
+
+    function getCategory(productName) {
+
+      if (productName.includes("硫酸")) {
+        return "硫酸";
+      }
+
+      if (productName.includes("鹽酸")) {
+        return "鹽酸";
+      }
+
+      if (productName.includes("硝酸")) {
+        return "硝酸";
+      }
+
+      if (productName.includes("液鹼")) {
+        return "液鹼";
+      }
+
+      return "其它";
+
+    }
+
+
+
+    // ==========================================
+    // 建立 Dashboard
+    // ==========================================
 
     function initDashboard() {
-      dashboard.innerHTML = ""; 
-      tankConfig.forEach(tank => {
-        tankVendorsData[tank.tankNo] = [];
-        
-        // 取得分類標籤
-        const category = getCategory(tank.product);
 
-        // 卡片加上 data-category 屬性供後續篩選
+      dashboard.innerHTML = "";
+
+
+      tankConfig.forEach(tank => {
+
+        tankVendorsData[tank.tankNo] = [];
+
+
+        const category =
+          getCategory(tank.product);
+
+
         const cardHTML = `
-          <div class="tank-card" data-category="${category}">
-            <div class="tank-no">${tank.tankNo}</div>
-            <div class="product-name">${tank.product}</div>
+
+          <div
+            class="tank-card"
+            data-category="${category}"
+          >
+
+            <div class="tank-no">
+              ${tank.tankNo}
+            </div>
+
+
+            <div class="product-name">
+              ${tank.product}
+            </div>
+
+
             <div class="tank-wrapper">
+
               <div class="tank-style">
-                <div id="liquid_${tank.tankNo}" class="liquid-style" style="height: 0%; background-color: #3498db;"></div>
+
+                <div
+                  id="liquid_${tank.tankNo}"
+                  class="liquid-style"
+                  style="
+                    height:0%;
+                    background-color:#3498db;
+                  "
+                ></div>
+
               </div>
+
             </div>
-            <div id="info_${tank.tankNo}" class="info-text">目前: 0 / 上限: ${tank.maxLevel} (0.0%)</div>
+
+
+            <div
+              id="info_${tank.tankNo}"
+              class="info-text"
+            >
+              目前: 0 /
+              上限: ${tank.maxLevel}
+              (0.0%)
+            </div>
+
+
             <div class="vendor-section">
+
               <div class="vendor-input-group">
-                <select id="vendor_select_${tank.tankNo}">
-                  <option value="" disabled selected>+ 選擇進貨廠商</option>
+
+                <select
+                  id="vendor_select_${tank.tankNo}"
+                >
+
+                  <option
+                    value=""
+                    disabled
+                    selected
+                  >
+                    + 選擇進貨廠商
+                  </option>
+
                   ${vendorOptionsHTML}
+
                 </select>
-                <button onclick="addVendor('${tank.tankNo}')">加入</button>
+
+
+                <button
+                  onclick="addVendor('${tank.tankNo}')"
+                >
+                  加入
+                </button>
+
               </div>
-              <div id="tags_${tank.tankNo}" class="vendor-tags"><span class="empty-vendor">目前無指定廠商</span></div>
+
+
+              <div
+                id="tags_${tank.tankNo}"
+                class="vendor-tags"
+              >
+
+                <span class="empty-vendor">
+                  目前無指定廠商
+                </span>
+
+              </div>
+
             </div>
-            <div id="time_${tank.tankNo}" class="time-text">更新時間: 尚未設定</div>
+
+
+            <div
+              id="time_${tank.tankNo}"
+              class="time-text"
+            >
+              更新時間: 尚未設定
+            </div>
+
+
             <div class="card-controls">
-              <input id="input_${tank.tankNo}" type="number" value="" placeholder="輸入液位" min="0" oninput="handleInput('${tank.tankNo}', this.value)">
+
+              <input
+                id="input_${tank.tankNo}"
+                type="number"
+                value=""
+                placeholder="輸入液位"
+                min="0"
+                oninput="
+                  handleInput(
+                    '${tank.tankNo}',
+                    this.value
+                  )
+                "
+              >
+
             </div>
+
           </div>
         `;
-        dashboard.innerHTML += cardHTML;
+
+
+        dashboard.innerHTML +=
+          cardHTML;
+
       });
+
     }
 
-    // === 新增：過濾分類功能 ===
-    function filterCategory(selectedCategory) {
-      // 1. 更新按鈕的顏色狀態 (讓被點擊的按鈕亮起)
-      document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.remove('active');
-        if (btn.innerText === selectedCategory) {
-          btn.classList.add('active');
-        }
-      });
 
-      // 2. 顯示/隱藏卡片
-      const allCards = document.querySelectorAll('.tank-card');
+
+    // ==========================================
+    // 分類篩選
+    // ==========================================
+
+    function filterCategory(
+      selectedCategory
+    ) {
+
+      document
+        .querySelectorAll('.tab-btn')
+        .forEach(btn => {
+
+          btn.classList.remove(
+            'active'
+          );
+
+
+          if (
+            btn.innerText ===
+            selectedCategory
+          ) {
+
+            btn.classList.add(
+              'active'
+            );
+
+          }
+
+        });
+
+
+      const allCards =
+        document.querySelectorAll(
+          '.tank-card'
+        );
+
+
       allCards.forEach(card => {
-        const cardCat = card.getAttribute('data-category');
-        if (selectedCategory === '全部' || cardCat === selectedCategory) {
-          card.style.display = 'flex'; // 顯示符合的桶槽
+
+        const cardCat =
+          card.getAttribute(
+            'data-category'
+          );
+
+
+        if (
+          selectedCategory ===
+          '全部' ||
+          cardCat ===
+          selectedCategory
+        ) {
+
+          card.style.display =
+            'flex';
+
         } else {
-          card.style.display = 'none'; // 隱藏不符合的桶槽
+
+          card.style.display =
+            'none';
+
         }
+
       });
+
     }
 
-    function applyChange(tankNo, newLevel, newVendors, timeStr, isFromRemote = false) {
-      const tank = tankConfig.find(t => t.tankNo === tankNo);
-      if (!tank) return;
 
-      tank.currentLevel = newLevel;
-      tankVendorsData[tankNo] = [...newVendors];
 
-      let displayLevel = newLevel > tank.maxLevel ? tank.maxLevel : newLevel;
-      if (displayLevel < 0) displayLevel = 0; 
-      const percentage = (displayLevel / tank.maxLevel) * 100;
-      const liquidEl = document.getElementById(`liquid_${tankNo}`);
+    // ==========================================
+    // 套用桶槽變更
+    // ==========================================
+
+    function applyChange(
+      tankNo,
+      newLevel,
+      newVendors,
+      timeStr,
+      isFromRemote = false
+    ) {
+
+      const tank =
+        tankConfig.find(
+          t => t.tankNo === tankNo
+        );
+
+
+      if (!tank) {
+        return;
+      }
+
+
+      if (!Array.isArray(newVendors)) {
+        newVendors = [];
+      }
+
+
+      tank.currentLevel =
+        Number(newLevel) || 0;
+
+
+      tankVendorsData[tankNo] =
+        [...newVendors];
+
+
+      let displayLevel =
+        tank.currentLevel;
+
+
+      if (
+        displayLevel >
+        tank.maxLevel
+      ) {
+
+        displayLevel =
+          tank.maxLevel;
+
+      }
+
+
+      if (displayLevel < 0) {
+
+        displayLevel = 0;
+
+      }
+
+
+      const percentage =
+        (
+          displayLevel /
+          tank.maxLevel
+        ) * 100;
+
+
+      const liquidEl =
+        document.getElementById(
+          `liquid_${tankNo}`
+        );
+
+
       if (liquidEl) {
-        liquidEl.style.height = `${percentage}%`;
-        liquidEl.style.backgroundColor = percentage >= 85 ? "#e74c3c" : "#3498db";
+
+        liquidEl.style.height =
+          `${percentage}%`;
+
+
+        liquidEl.style.backgroundColor =
+          percentage >= 85
+            ? "#e74c3c"
+            : "#3498db";
+
       }
 
-      const infoEl = document.getElementById(`info_${tankNo}`);
+
+      const infoEl =
+        document.getElementById(
+          `info_${tankNo}`
+        );
+
+
       if (infoEl) {
-        const actualPercentage = (newLevel / tank.maxLevel) * 100;
-        infoEl.innerHTML = newLevel > tank.maxLevel 
-          ? `目前: <span style="color:red;">${newLevel}</span> / 上限: ${tank.maxLevel} (<span style="color:red;">${actualPercentage.toFixed(1)}%</span>)`
-          : `目前: ${newLevel} / 上限: ${tank.maxLevel} (${actualPercentage.toFixed(1)}%)`;
+
+        const actualPercentage =
+          (
+            tank.currentLevel /
+            tank.maxLevel
+          ) * 100;
+
+
+        infoEl.innerHTML =
+
+          tank.currentLevel >
+          tank.maxLevel
+
+          ? `目前:
+             <span style="color:red;">
+             ${tank.currentLevel}
+             </span>
+             /
+             上限:
+             ${tank.maxLevel}
+             (
+             <span style="color:red;">
+             ${actualPercentage.toFixed(1)}%
+             </span>
+             )`
+
+          : `目前:
+             ${tank.currentLevel}
+             /
+             上限:
+             ${tank.maxLevel}
+             (
+             ${actualPercentage.toFixed(1)}%
+             )`;
+
       }
 
-      const inputEl = document.getElementById(`input_${tankNo}`);
-      if (inputEl && isFromRemote) {
-        inputEl.value = newLevel === 0 ? "" : newLevel;
+
+      const inputEl =
+        document.getElementById(
+          `input_${tankNo}`
+        );
+
+
+      if (
+        inputEl &&
+        isFromRemote
+      ) {
+
+        inputEl.value =
+          tank.currentLevel === 0
+            ? ""
+            : tank.currentLevel;
+
       }
 
-      const tagsContainer = document.getElementById(`tags_${tankNo}`);
+
+      const tagsContainer =
+        document.getElementById(
+          `tags_${tankNo}`
+        );
+
+
       if (tagsContainer) {
-        if (newVendors.length === 0) {
-          tagsContainer.innerHTML = `<span class="empty-vendor">目前無指定廠商</span>`;
+
+        if (
+          newVendors.length === 0
+        ) {
+
+          tagsContainer.innerHTML =
+            `<span class="empty-vendor">
+              目前無指定廠商
+             </span>`;
+
         } else {
-          tagsContainer.innerHTML = newVendors.map((vendorName, index) => `
-            <div class="vendor-chip">
-              ${vendorName} 
-              <span class="remove-btn" onclick="removeVendor('${tankNo}', ${index})">✖</span>
-            </div>
-          `).join("");
+
+          tagsContainer.innerHTML =
+            newVendors
+              .map(
+                (
+                  vendorName,
+                  index
+                ) => `
+
+                  <div class="vendor-chip">
+
+                    ${vendorName}
+
+                    <span
+                      class="remove-btn"
+                      onclick="
+                        removeVendor(
+                          '${tankNo}',
+                          ${index}
+                        )
+                      "
+                    >
+                      ✖
+                    </span>
+
+                  </div>
+
+                `
+              )
+              .join("");
+
         }
+
       }
 
-      const timeEl = document.getElementById(`time_${tankNo}`);
+
+      const timeEl =
+        document.getElementById(
+          `time_${tankNo}`
+        );
+
+
       if (timeEl) {
-        timeEl.textContent = timeStr ? `最後更新: ${timeStr}` : "更新時間: 尚未設定";
+
+        timeEl.textContent =
+          timeStr
+
+          ? `最後更新: ${timeStr}`
+
+          : "更新時間: 尚未設定";
+
       }
 
-      if (!isFromRemote) {
-        socket.emit('tank_changed', { tankNo: tankNo, level: newLevel, vendors: newVendors, timeStr: timeStr });
+
+      if (
+        !isFromRemote &&
+        socket &&
+        socket.connected
+      ) {
+
+        socket.emit(
+          'tank_changed',
+          {
+
+            tankNo:
+              tankNo,
+
+            level:
+              tank.currentLevel,
+
+            vendors:
+              newVendors,
+
+            timeStr:
+              timeStr
+
+          }
+        );
+
       }
+
     }
 
-    socket.on('init_data', (serverState) => {
-      for (let tNo in serverState) {
-        const data = serverState[tNo];
-        applyChange(tNo, data.level, data.vendors, data.timeStr, true);
-      }
-    });
 
-    socket.on('sync_tank', (data) => {
-      applyChange(data.tankNo, data.level, data.vendors, data.timeStr, true);
-    });
+
+    // ==========================================
+    // 時間
+    // ==========================================
 
     function getNowString() {
-      const now = new Date();
-      return `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} ${now.toLocaleTimeString('zh-TW', { hour12: false })}`;
+
+      const now =
+        new Date();
+
+
+      return (
+
+        `${now.getFullYear()}/` +
+
+        `${String(
+          now.getMonth() + 1
+        ).padStart(2,'0')}/` +
+
+        `${String(
+          now.getDate()
+        ).padStart(2,'0')} ` +
+
+        now.toLocaleTimeString(
+          'zh-TW',
+          {
+            hour12: false
+          }
+        )
+
+      );
+
     }
+
+
+
+    // ==========================================
+    // 廠商
+    // ==========================================
 
     function addVendor(tankNo) {
-      const selectEl = document.getElementById(`vendor_select_${tankNo}`);
-      if (!selectEl.value) return; 
-      tankVendorsData[tankNo].push(selectEl.value); 
-      applyChange(tankNo, tankConfig.find(t=>t.tankNo===tankNo).currentLevel, tankVendorsData[tankNo], getNowString(), false);
-      selectEl.value = ""; 
+
+      const selectEl =
+        document.getElementById(
+          `vendor_select_${tankNo}`
+        );
+
+
+      if (!selectEl.value) {
+        return;
+      }
+
+
+      tankVendorsData[
+        tankNo
+      ].push(
+        selectEl.value
+      );
+
+
+      applyChange(
+
+        tankNo,
+
+        tankConfig.find(
+          t =>
+            t.tankNo ===
+            tankNo
+        ).currentLevel,
+
+        tankVendorsData[
+          tankNo
+        ],
+
+        getNowString(),
+
+        false
+
+      );
+
+
+      selectEl.value = "";
+
     }
 
-    function removeVendor(tankNo, index) {
-      tankVendorsData[tankNo].splice(index, 1);
-      applyChange(tankNo, tankConfig.find(t=>t.tankNo===tankNo).currentLevel, tankVendorsData[tankNo], getNowString(), false);
+
+
+    function removeVendor(
+      tankNo,
+      index
+    ) {
+
+      tankVendorsData[
+        tankNo
+      ].splice(
+        index,
+        1
+      );
+
+
+      applyChange(
+
+        tankNo,
+
+        tankConfig.find(
+          t =>
+            t.tankNo ===
+            tankNo
+        ).currentLevel,
+
+        tankVendorsData[
+          tankNo
+        ],
+
+        getNowString(),
+
+        false
+
+      );
+
     }
 
-    function handleInput(tankNo, inputValue) {
-      const newValue = inputValue === "" ? 0 : parseFloat(inputValue);
-      const timeStr = inputValue === "" ? "" : getNowString();
-      applyChange(tankNo, newValue, tankVendorsData[tankNo], timeStr, false);
+
+
+    // ==========================================
+    // 液位輸入
+    // ==========================================
+
+    function handleInput(
+      tankNo,
+      inputValue
+    ) {
+
+      const newValue =
+        inputValue === ""
+
+        ? 0
+
+        : parseFloat(
+            inputValue
+          );
+
+
+      const timeStr =
+        inputValue === ""
+
+        ? ""
+
+        : getNowString();
+
+
+      applyChange(
+
+        tankNo,
+
+        newValue,
+
+        tankVendorsData[
+          tankNo
+        ],
+
+        timeStr,
+
+        false
+
+      );
+
     }
+
+
+
+    // ==========================================
+    // 換日
+    // ==========================================
 
     function checkNewDay() {
-      const nowDay = new Date().getDate(); 
-      if (nowDay !== currentDay) {
-        currentDay = nowDay;
-        tankConfig.forEach(tank => {
-          tankVendorsData[tank.tankNo] = []; 
-          applyChange(tank.tankNo, tank.currentLevel, [], getNowString(), false);
-        });
+
+      const nowDay =
+        new Date().getDate();
+
+
+      if (
+        nowDay !==
+        currentDay
+      ) {
+
+        currentDay =
+          nowDay;
+
+
+        tankConfig.forEach(
+          tank => {
+
+            tankVendorsData[
+              tank.tankNo
+            ] = [];
+
+
+            applyChange(
+
+              tank.tankNo,
+
+              tank.currentLevel,
+
+              [],
+
+              getNowString(),
+
+              false
+
+            );
+
+          }
+        );
+
       }
+
     }
 
+
+
+    // ==========================================
+    // 啟動
+    // ==========================================
+
     initDashboard();
-    setInterval(checkNewDay, 60000);
+
+    setInterval(
+      checkNewDay,
+      60000
+    );
+
   </script>
+
 </body>
 </html>
