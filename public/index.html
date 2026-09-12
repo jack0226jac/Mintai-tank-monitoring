@@ -130,24 +130,55 @@
 
   <script>
     // --- 登入驗證邏輯 ---
-    const validAccounts = {
-      "1001": "1111",
-      "1002": "2222",
-      "1003": "3333"
-    };
+    async function checkLogin() {
 
-    function checkLogin() {
-      const user = document.getElementById('username').value;
-      const pass = document.getElementById('password').value;
-      const errorMsg = document.getElementById('login-error');
+  const user = document.getElementById('username').value.trim();
+  const pass = document.getElementById('password').value;
 
-      if (validAccounts[user] && validAccounts[user] === pass) {
-        document.getElementById('login-overlay').style.display = 'none';
-        errorMsg.style.display = 'none';
-      } else {
-        errorMsg.style.display = 'block';
-      }
+  const errorMsg = document.getElementById('login-error');
+
+  try {
+
+    const response = await fetch('/api/login', {
+
+      method: 'POST',
+
+      headers: {
+        'Content-Type': 'application/json'
+      },
+
+      body: JSON.stringify({
+        username: user,
+        password: pass
+      })
+
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+
+      document.getElementById('login-overlay').style.display = 'none';
+
+      errorMsg.style.display = 'none';
+
+    } else {
+
+      errorMsg.style.display = 'block';
+
     }
+
+  } catch (error) {
+
+    console.error(error);
+
+    errorMsg.textContent = '⚠️ 無法連線至伺服器，請稍後再試！';
+
+    errorMsg.style.display = 'block';
+
+  }
+
+}
 
     function handleEnter(e) {
       if (e.key === 'Enter') checkLogin();
