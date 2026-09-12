@@ -1001,6 +1001,12 @@
         登入
       </button>
 
+      <div
+        style="margin-top:10px;font-size:10px;color:#aaa;text-align:center;"
+      >
+        系統版本：Security 2026-09-12B
+      </div>
+
     </div>
 
   </div>
@@ -1685,8 +1691,36 @@
 
         } else {
 
+          let loginMessage =
+            result.message ||
+            '帳號或密碼錯誤';
+
+
+          if (
+            Number.isInteger(
+              result.remainingAttempts
+            ) &&
+            result.remainingAttempts > 0
+          ) {
+
+            loginMessage =
+              `帳號或密碼錯誤，剩餘嘗試次數 ${result.remainingAttempts} / ${result.maxAttempts || 5}`;
+          }
+
+
+          if (
+            result.code ===
+            'LOGIN_BLOCKED'
+          ) {
+
+            loginMessage =
+              result.message ||
+              '登入失敗次數過多，請稍後再試';
+          }
+
+
           errorMsg.textContent =
-            '⚠️ 帳號或密碼錯誤';
+            `⚠️ ${loginMessage}`;
 
           errorMsg.style.color =
             '#e74c3c';
