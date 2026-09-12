@@ -1194,6 +1194,60 @@
 
         </div>
 
+
+        <div class="settings-section">
+
+          <h3>📜 管理操作稽核紀錄</h3>
+
+          <div class="settings-form">
+
+            <div class="settings-field">
+              <label>顯示筆數</label>
+              <select id="admin-history-limit">
+                <option value="20">20</option>
+                <option value="50">50</option>
+                <option value="100" selected>100</option>
+                <option value="200">200</option>
+              </select>
+            </div>
+
+            <button
+              class="settings-add-btn"
+              onclick="loadAdminHistory()"
+            >
+              ↻ 重新整理紀錄
+            </button>
+
+          </div>
+
+          <div class="settings-table-wrap">
+
+            <table class="settings-table">
+
+              <thead>
+                <tr>
+                  <th>時間</th>
+                  <th>帳號</th>
+                  <th>操作</th>
+                  <th>對象</th>
+                  <th>修改前</th>
+                  <th>修改後</th>
+                  <th>IP</th>
+                </tr>
+              </thead>
+
+              <tbody id="admin-history-body">
+                <tr>
+                  <td colspan="7">尚未載入</td>
+                </tr>
+              </tbody>
+
+            </table>
+
+          </div>
+
+        </div>
+
       </div>
 
     </div>
@@ -3648,6 +3702,9 @@
         );
 
 
+        await loadAdminHistory();
+
+
         status.textContent =
           '✅ 設定已載入';
 
@@ -4452,6 +4509,260 @@
         alert(
           `⚠️ ${error.message}`
         );
+      }
+    }
+
+
+    function formatAdminAuditTime(
+      value
+    ) {
+
+      if (!value) {
+        return '';
+      }
+
+      try {
+
+        return new Intl.DateTimeFormat(
+          'zh-TW',
+          {
+            timeZone:
+              'Asia/Taipei',
+            year:
+              'numeric',
+            month:
+              '2-digit',
+            day:
+              '2-digit',
+            hour:
+              '2-digit',
+            minute:
+              '2-digit',
+            second:
+              '2-digit',
+            hour12:
+              false
+          }
+        ).format(
+          new Date(value)
+        );
+
+      } catch (error) {
+
+        return String(value);
+      }
+    }
+
+
+    function adminActionLabel(
+      action
+    ) {
+
+      const labels = {
+        CREATE_TANK:
+          '新增桶槽',
+        UPDATE_TANK:
+          '修改桶槽',
+        DISABLE_TANK:
+          '停用桶槽',
+        ENABLE_TANK:
+          '啟用桶槽',
+        CREATE_VENDOR:
+          '新增廠商',
+        UPDATE_VENDOR:
+          '修改廠商',
+        DISABLE_VENDOR:
+          '停用廠商',
+        ENABLE_VENDOR:
+          '啟用廠商'
+      };
+
+      return labels[action] ||
+        action ||
+        '';
+    }
+
+
+    function auditObjectText(
+      data
+    ) {
+
+      if (!data) {
+        return '—';
+      }
+
+      const labels = {
+        tank_no:
+          '桶槽',
+        product:
+          '品名',
+        max_level:
+          '上限',
+        category:
+          '分類',
+        sort_order:
+          '排序',
+        enabled:
+          '啟用',
+        id:
+          'ID',
+        vendor_name:
+          '廠商'
+      };
+
+      return Object
+        .entries(data)
+        .map(
+          ([key, value]) => {
+
+            let displayValue =
+              value;
+
+            if (
+              typeof value ===
+              'boolean'
+            ) {
+              displayValue =
+                value
+                  ? '是'
+                  : '否';
+            }
+
+            return `${labels[key] || key}: ${displayValue}`;
+          }
+        )
+        .join('；');
+    }
+
+
+    async function loadAdminHistory() {
+
+      const body =
+        document.getElementById(
+          'admin-history-body'
+        );
+
+      if (!body) {
+        return;
+      }
+
+      const limit =
+        document.getElementById(
+          'admin-history-limit'
+        )?.value || '100';
+
+      body.innerHTML =
+        '<tr><td colspan="7">載入中...</td></tr>';
+
+      try {
+
+        const result =
+          await adminRequest(
+            `/api/admin/history?limit=${encodeURIComponent(limit)}`
+          );
+
+        body.innerHTML = '';
+
+        const rows =
+          result.history || [];
+
+        if (
+          rows.length === 0
+        ) {
+
+          const tr =
+            document.createElement(
+              'tr'
+            );
+
+          const td =
+            document.createElement(
+              'td'
+            );
+
+          td.colSpan = 7;
+          td.textContent =
+            '目前尚無管理操作紀錄';
+
+          tr.appendChild(td);
+          body.appendChild(tr);
+
+          return;
+        }
+
+        for (
+          const item of rows
+        ) {
+
+          const tr =
+            document.createElement(
+              'tr'
+            );
+
+          const targetName =
+            item.new_data?.tank_no ||
+            item.old_data?.tank_no ||
+            item.new_data?.vendor_name ||
+            item.old_data?.vendor_name ||
+            item.target_id ||
+            '';
+
+          const values = [
+            formatAdminAuditTime(
+              item.updated_at
+            ),
+            item.updated_by || '',
+            adminActionLabel(
+              item.action_type
+            ),
+            targetName,
+            auditObjectText(
+              item.old_data
+            ),
+            auditObjectText(
+              item.new_data
+            ),
+            item.ip_address || ''
+          ];
+
+          for (
+            const value of values
+          ) {
+
+            const td =
+              document.createElement(
+                'td'
+              );
+
+            td.textContent =
+              String(value);
+
+            tr.appendChild(td);
+          }
+
+          body.appendChild(tr);
+        }
+
+      } catch (error) {
+
+        body.innerHTML = '';
+
+        const tr =
+          document.createElement(
+            'tr'
+          );
+
+        const td =
+          document.createElement(
+            'td'
+          );
+
+        td.colSpan = 7;
+        td.textContent =
+          `❌ ${error.message}`;
+
+        tr.appendChild(td);
+        body.appendChild(tr);
       }
     }
 
