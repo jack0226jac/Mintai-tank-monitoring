@@ -1,4 +1,5 @@
 const express = require('express');
+const helmet = require('helmet');
 const http = require('http');
 const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
@@ -9,6 +10,14 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 app.set('trust proxy', 1);
+
+app.use(
+    helmet({
+        // 目前前端仍有 inline JavaScript / CSS / onclick。
+        // 先保留其他 Helmet 安全標頭，避免 CSP 直接造成現有頁面失效。
+        contentSecurityPolicy: false
+    })
+);
 
 app.use(express.json());
 
