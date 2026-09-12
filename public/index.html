@@ -77,6 +77,23 @@
       100% { opacity: 1; }
     }
 
+
+    .settings-small-btn {
+      border: none;
+      background: #f39c12;
+      color: white;
+      border-radius: 14px;
+      padding: 5px 9px;
+      font-size: 11px;
+      font-weight: bold;
+      cursor: pointer;
+      display: none;
+    }
+
+    .settings-small-btn:hover {
+      background: #d68910;
+    }
+
     .history-small-btn {
       border: none;
       background: #8e44ad;
@@ -429,6 +446,178 @@
       font-weight: bold;
     }
 
+
+    /* =========================================
+       系統設定
+       ========================================= */
+
+    #settings-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 9200;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .settings-panel {
+      background: white;
+      width: 96%;
+      max-width: 1200px;
+      max-height: 92vh;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.25);
+    }
+
+    .settings-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      border-bottom: 1px solid #ddd;
+      background: #fafafa;
+    }
+
+    .settings-title {
+      font-size: 20px;
+      font-weight: bold;
+      color: #2c3e50;
+    }
+
+    .settings-close {
+      border: none;
+      background: #e74c3c;
+      color: white;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      font-size: 18px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .settings-body {
+      overflow: auto;
+      padding: 18px;
+    }
+
+    .settings-section {
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 18px;
+      background: #fff;
+    }
+
+    .settings-section h3 {
+      margin: 0 0 12px 0;
+      color: #34495e;
+    }
+
+    .settings-form {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(120px, 1fr));
+      gap: 8px;
+      align-items: end;
+      margin-bottom: 15px;
+    }
+
+    .settings-form.vendor-form {
+      grid-template-columns: minmax(180px, 2fr) minmax(100px, 1fr) auto;
+    }
+
+    .settings-field label {
+      display: block;
+      font-size: 12px;
+      font-weight: bold;
+      margin-bottom: 5px;
+      color: #555;
+    }
+
+    .settings-field input,
+    .settings-field select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #cfd6dc;
+      border-radius: 6px;
+      background: white;
+    }
+
+    .settings-add-btn,
+    .settings-save-btn {
+      border: none;
+      color: white;
+      border-radius: 6px;
+      padding: 9px 12px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .settings-add-btn {
+      background: #16a085;
+    }
+
+    .settings-save-btn {
+      background: #3498db;
+      white-space: nowrap;
+    }
+
+    .settings-table-wrap {
+      overflow-x: auto;
+    }
+
+    .settings-table {
+      width: 100%;
+      min-width: 820px;
+      border-collapse: collapse;
+    }
+
+    .settings-table th {
+      background: #34495e;
+      color: white;
+      padding: 9px;
+      text-align: left;
+      font-size: 13px;
+    }
+
+    .settings-table td {
+      padding: 8px;
+      border-bottom: 1px solid #eee;
+      vertical-align: middle;
+      font-size: 13px;
+    }
+
+    .settings-table input[type="text"],
+    .settings-table input[type="number"],
+    .settings-table select {
+      width: 100%;
+      padding: 7px;
+      border: 1px solid #cfd6dc;
+      border-radius: 5px;
+    }
+
+    .settings-status {
+      margin-bottom: 12px;
+      font-size: 13px;
+      font-weight: bold;
+      color: #7f8c8d;
+    }
+
+    .enabled-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+    }
+
     /* =========================================
        操作紀錄
        ========================================= */
@@ -610,6 +799,7 @@
         font-size: 11px;
       }
 
+      .settings-small-btn,
       .history-small-btn,
       .logout-small-btn {
         font-size: 10px;
@@ -658,8 +848,23 @@
         padding: 8px;
       }
 
+      #settings-overlay,
       #history-overlay {
         padding: 8px;
+      }
+
+      .settings-panel {
+        width: 100%;
+        max-height: 95vh;
+      }
+
+      .settings-form,
+      .settings-form.vendor-form {
+        grid-template-columns: 1fr;
+      }
+
+      .settings-body {
+        padding: 10px;
       }
 
       .history-panel {
@@ -702,6 +907,15 @@
     <span id="idle-timer">
       ⏱ 閒置登出 30:00
     </span>
+
+
+    <button
+      id="settings-btn"
+      class="settings-small-btn"
+      onclick="openSettings()"
+    >
+      ⚙️ 設定
+    </button>
 
     <button
       class="history-small-btn"
@@ -786,6 +1000,195 @@
       >
         登入
       </button>
+
+    </div>
+
+  </div>
+
+
+
+  <!-- ======================================
+       系統設定
+       ====================================== -->
+
+  <div id="settings-overlay">
+
+    <div class="settings-panel">
+
+      <div class="settings-header">
+
+        <div class="settings-title">
+          ⚙️ 系統設定
+        </div>
+
+        <button
+          class="settings-close"
+          onclick="closeSettings()"
+        >
+          ×
+        </button>
+
+      </div>
+
+      <div class="settings-body">
+
+        <div
+          id="settings-status"
+          class="settings-status"
+        >
+          尚未載入
+        </div>
+
+        <div class="settings-section">
+
+          <h3>桶槽管理</h3>
+
+          <div class="settings-form">
+
+            <div class="settings-field">
+              <label>桶槽編號</label>
+              <input
+                id="new-tank-no"
+                type="text"
+                placeholder="例：TK-46"
+              >
+            </div>
+
+            <div class="settings-field">
+              <label>品名</label>
+              <input
+                id="new-tank-product"
+                type="text"
+                placeholder="例：硫酸 (50%)"
+              >
+            </div>
+
+            <div class="settings-field">
+              <label>上限</label>
+              <input
+                id="new-tank-max"
+                type="number"
+                min="0.01"
+                step="0.01"
+                placeholder="例：60"
+              >
+            </div>
+
+            <div class="settings-field">
+              <label>分類</label>
+              <select id="new-tank-category">
+                <option value="硫酸">硫酸</option>
+                <option value="鹽酸">鹽酸</option>
+                <option value="硝酸">硝酸</option>
+                <option value="液鹼">液鹼</option>
+                <option value="其它" selected>其它</option>
+              </select>
+            </div>
+
+            <div class="settings-field">
+              <label>排序</label>
+              <input
+                id="new-tank-sort"
+                type="number"
+                min="0"
+                step="1"
+                value="100"
+              >
+            </div>
+
+            <button
+              class="settings-add-btn"
+              onclick="addTankMaster()"
+            >
+              ＋ 新增桶槽
+            </button>
+
+          </div>
+
+          <div class="settings-table-wrap">
+
+            <table class="settings-table">
+
+              <thead>
+                <tr>
+                  <th>桶槽</th>
+                  <th>品名</th>
+                  <th>上限</th>
+                  <th>分類</th>
+                  <th>排序</th>
+                  <th>啟用</th>
+                  <th>儲存</th>
+                </tr>
+              </thead>
+
+              <tbody id="admin-tank-body">
+              </tbody>
+
+            </table>
+
+          </div>
+
+        </div>
+
+
+        <div class="settings-section">
+
+          <h3>廠商管理</h3>
+
+          <div class="settings-form vendor-form">
+
+            <div class="settings-field">
+              <label>廠商名稱</label>
+              <input
+                id="new-vendor-name"
+                type="text"
+                placeholder="輸入新廠商名稱"
+              >
+            </div>
+
+            <div class="settings-field">
+              <label>排序</label>
+              <input
+                id="new-vendor-sort"
+                type="number"
+                min="0"
+                step="1"
+                value="100"
+              >
+            </div>
+
+            <button
+              class="settings-add-btn"
+              onclick="addVendorMaster()"
+            >
+              ＋ 新增廠商
+            </button>
+
+          </div>
+
+          <div class="settings-table-wrap">
+
+            <table class="settings-table">
+
+              <thead>
+                <tr>
+                  <th>廠商名稱</th>
+                  <th>排序</th>
+                  <th>啟用</th>
+                  <th>儲存</th>
+                </tr>
+              </thead>
+
+              <tbody id="admin-vendor-body">
+              </tbody>
+
+            </table>
+
+          </div>
+
+        </div>
+
+      </div>
 
     </div>
 
@@ -970,6 +1373,8 @@
 
     let socket = null;
 
+    let isAdmin = false;
+
     const IDLE_TIMEOUT =
       30 * 60 * 1000;
 
@@ -987,6 +1392,65 @@
       document.getElementById(
         "dashboard"
       );
+
+
+
+    // ==========================================
+    // 讀取目前登入者權限
+    // ==========================================
+
+    async function loadUserProfile(
+      token
+    ) {
+
+      const response =
+        await fetch(
+          '/api/me',
+          {
+            headers: {
+              Authorization:
+                `Bearer ${token}`
+            }
+          }
+        );
+
+
+      if (
+        response.status === 401
+      ) {
+
+        logout(
+          '登入已失效，請重新登入'
+        );
+
+        throw new Error(
+          '登入已失效'
+        );
+      }
+
+
+      const result =
+        await response.json();
+
+
+      if (
+        !response.ok ||
+        !result.success
+      ) {
+
+        throw new Error(
+          result.message ||
+          '讀取使用者權限失敗'
+        );
+      }
+
+
+      isAdmin =
+        result.isAdmin === true;
+
+
+      return result;
+    }
 
 
     // ==========================================
@@ -1180,7 +1644,12 @@
             'block';
 
 
-          // 先從資料庫載入桶槽與廠商，再建立畫面
+          // 先取得使用者權限
+          await loadUserProfile(
+            result.token
+          );
+
+          // 再從資料庫載入桶槽與廠商
           await loadSystemConfig(
             result.token
           );
@@ -1353,7 +1822,12 @@
 
       try {
 
-        // 先從 PostgreSQL 載入桶槽及廠商
+        // 先取得使用者權限
+        await loadUserProfile(
+          token
+        );
+
+        // 再從 PostgreSQL 載入桶槽及廠商
         await loadSystemConfig(
           token
         );
@@ -1763,6 +2237,11 @@
 
       closeHistory();
 
+      closeSettings();
+
+      isAdmin =
+        false;
+
 
       document
         .getElementById(
@@ -1844,6 +2323,17 @@
         )
         .textContent =
         `👤 ${username || ''}`;
+
+
+      document
+        .getElementById(
+          'settings-btn'
+        )
+        .style
+        .display =
+        isAdmin
+          ? 'inline-block'
+          : 'none';
     }
 
 
@@ -2930,6 +3420,1030 @@
     }
 
 
+
+    // ==========================================
+    // 系統設定管理
+    // ==========================================
+
+    function getToken() {
+
+      return sessionStorage.getItem(
+        'tank_token'
+      );
+    }
+
+
+    async function adminRequest(
+      url,
+      options = {}
+    ) {
+
+      const token =
+        getToken();
+
+
+      if (
+        !token
+      ) {
+
+        logout(
+          '請重新登入'
+        );
+
+        throw new Error(
+          '未登入'
+        );
+      }
+
+
+      const headers = {
+        ...(options.headers || {}),
+        Authorization:
+          `Bearer ${token}`
+      };
+
+
+      if (
+        options.body &&
+        !headers['Content-Type']
+      ) {
+
+        headers['Content-Type'] =
+          'application/json';
+      }
+
+
+      const response =
+        await fetch(
+          url,
+          {
+            ...options,
+            headers
+          }
+        );
+
+
+      if (
+        response.status === 401
+      ) {
+
+        logout(
+          '登入已失效，請重新登入'
+        );
+
+        throw new Error(
+          '登入已失效'
+        );
+      }
+
+
+      const result =
+        await response.json();
+
+
+      if (
+        response.status === 403
+      ) {
+
+        isAdmin =
+          false;
+
+        document
+          .getElementById(
+            'settings-btn'
+          )
+          .style
+          .display =
+          'none';
+
+        throw new Error(
+          result.message ||
+          '沒有系統設定權限'
+        );
+      }
+
+
+      if (
+        !response.ok ||
+        !result.success
+      ) {
+
+        throw new Error(
+          result.message ||
+          '操作失敗'
+        );
+      }
+
+
+      return result;
+    }
+
+
+    async function openSettings() {
+
+      if (
+        !isAdmin
+      ) {
+
+        alert(
+          '⚠️ 您沒有系統設定權限'
+        );
+
+        return;
+      }
+
+
+      document
+        .getElementById(
+          'settings-overlay'
+        )
+        .style
+        .display =
+        'flex';
+
+
+      await loadAdminConfig();
+    }
+
+
+    function closeSettings() {
+
+      const overlay =
+        document.getElementById(
+          'settings-overlay'
+        );
+
+
+      if (
+        overlay
+      ) {
+
+        overlay.style.display =
+          'none';
+      }
+    }
+
+
+    async function loadAdminConfig() {
+
+      const status =
+        document.getElementById(
+          'settings-status'
+        );
+
+
+      status.textContent =
+        '設定載入中...';
+
+
+      try {
+
+        const result =
+          await adminRequest(
+            '/api/admin/config'
+          );
+
+
+        renderAdminTanks(
+          result.tanks || []
+        );
+
+
+        renderAdminVendors(
+          result.vendors || []
+        );
+
+
+        status.textContent =
+          '✅ 設定已載入';
+
+
+      } catch (
+        error
+      ) {
+
+        console.error(
+          error
+        );
+
+
+        status.textContent =
+          `❌ ${error.message}`;
+      }
+    }
+
+
+    function createCategorySelect(
+      value
+    ) {
+
+      const select =
+        document.createElement(
+          'select'
+        );
+
+
+      [
+        '硫酸',
+        '鹽酸',
+        '硝酸',
+        '液鹼',
+        '其它'
+      ]
+      .forEach(
+        category => {
+
+          const option =
+            document.createElement(
+              'option'
+            );
+
+
+          option.value =
+            category;
+
+          option.textContent =
+            category;
+
+          option.selected =
+            category === value;
+
+
+          select.appendChild(
+            option
+          );
+        }
+      );
+
+
+      return select;
+    }
+
+
+    function renderAdminTanks(
+      tanks
+    ) {
+
+      const body =
+        document.getElementById(
+          'admin-tank-body'
+        );
+
+
+      body.innerHTML =
+        '';
+
+
+      tanks.forEach(
+        tank => {
+
+          const row =
+            document.createElement(
+              'tr'
+            );
+
+
+          const tankCell =
+            document.createElement(
+              'td'
+            );
+
+          tankCell.textContent =
+            tank.tankNo;
+
+
+          const productCell =
+            document.createElement(
+              'td'
+            );
+
+          const productInput =
+            document.createElement(
+              'input'
+            );
+
+          productInput.type =
+            'text';
+
+          productInput.value =
+            tank.product;
+
+          productCell.appendChild(
+            productInput
+          );
+
+
+          const maxCell =
+            document.createElement(
+              'td'
+            );
+
+          const maxInput =
+            document.createElement(
+              'input'
+            );
+
+          maxInput.type =
+            'number';
+
+          maxInput.min =
+            '0.01';
+
+          maxInput.step =
+            '0.01';
+
+          maxInput.value =
+            tank.maxLevel;
+
+          maxCell.appendChild(
+            maxInput
+          );
+
+
+          const categoryCell =
+            document.createElement(
+              'td'
+            );
+
+          const categorySelect =
+            createCategorySelect(
+              tank.category
+            );
+
+          categoryCell.appendChild(
+            categorySelect
+          );
+
+
+          const sortCell =
+            document.createElement(
+              'td'
+            );
+
+          const sortInput =
+            document.createElement(
+              'input'
+            );
+
+          sortInput.type =
+            'number';
+
+          sortInput.min =
+            '0';
+
+          sortInput.step =
+            '1';
+
+          sortInput.value =
+            tank.sortOrder;
+
+          sortCell.appendChild(
+            sortInput
+          );
+
+
+          const enabledCell =
+            document.createElement(
+              'td'
+            );
+
+          const enabledLabel =
+            document.createElement(
+              'label'
+            );
+
+          enabledLabel.className =
+            'enabled-label';
+
+
+          const enabledInput =
+            document.createElement(
+              'input'
+            );
+
+          enabledInput.type =
+            'checkbox';
+
+          enabledInput.checked =
+            tank.enabled === true;
+
+
+          const enabledText =
+            document.createElement(
+              'span'
+            );
+
+          enabledText.textContent =
+            '啟用';
+
+
+          enabledLabel.appendChild(
+            enabledInput
+          );
+
+          enabledLabel.appendChild(
+            enabledText
+          );
+
+          enabledCell.appendChild(
+            enabledLabel
+          );
+
+
+          const saveCell =
+            document.createElement(
+              'td'
+            );
+
+          const saveButton =
+            document.createElement(
+              'button'
+            );
+
+          saveButton.className =
+            'settings-save-btn';
+
+          saveButton.textContent =
+            '儲存';
+
+
+          saveButton.onclick =
+            async () => {
+
+              await saveTankMaster(
+                tank.tankNo,
+                {
+                  product:
+                    productInput.value.trim(),
+
+                  maxLevel:
+                    Number(
+                      maxInput.value
+                    ),
+
+                  category:
+                    categorySelect.value,
+
+                  sortOrder:
+                    Number(
+                      sortInput.value
+                    ),
+
+                  enabled:
+                    enabledInput.checked
+                }
+              );
+            };
+
+
+          saveCell.appendChild(
+            saveButton
+          );
+
+
+          [
+            tankCell,
+            productCell,
+            maxCell,
+            categoryCell,
+            sortCell,
+            enabledCell,
+            saveCell
+          ]
+          .forEach(
+            cell => {
+
+              row.appendChild(
+                cell
+              );
+            }
+          );
+
+
+          body.appendChild(
+            row
+          );
+        }
+      );
+    }
+
+
+    function renderAdminVendors(
+      vendors
+    ) {
+
+      const body =
+        document.getElementById(
+          'admin-vendor-body'
+        );
+
+
+      body.innerHTML =
+        '';
+
+
+      vendors.forEach(
+        vendor => {
+
+          const row =
+            document.createElement(
+              'tr'
+            );
+
+
+          const nameCell =
+            document.createElement(
+              'td'
+            );
+
+          nameCell.textContent =
+            vendor.vendorName;
+
+
+          const sortCell =
+            document.createElement(
+              'td'
+            );
+
+          const sortInput =
+            document.createElement(
+              'input'
+            );
+
+          sortInput.type =
+            'number';
+
+          sortInput.min =
+            '0';
+
+          sortInput.step =
+            '1';
+
+          sortInput.value =
+            vendor.sortOrder;
+
+          sortCell.appendChild(
+            sortInput
+          );
+
+
+          const enabledCell =
+            document.createElement(
+              'td'
+            );
+
+          const enabledLabel =
+            document.createElement(
+              'label'
+            );
+
+          enabledLabel.className =
+            'enabled-label';
+
+
+          const enabledInput =
+            document.createElement(
+              'input'
+            );
+
+          enabledInput.type =
+            'checkbox';
+
+          enabledInput.checked =
+            vendor.enabled === true;
+
+
+          const enabledText =
+            document.createElement(
+              'span'
+            );
+
+          enabledText.textContent =
+            '啟用';
+
+
+          enabledLabel.appendChild(
+            enabledInput
+          );
+
+          enabledLabel.appendChild(
+            enabledText
+          );
+
+          enabledCell.appendChild(
+            enabledLabel
+          );
+
+
+          const saveCell =
+            document.createElement(
+              'td'
+            );
+
+          const saveButton =
+            document.createElement(
+              'button'
+            );
+
+          saveButton.className =
+            'settings-save-btn';
+
+          saveButton.textContent =
+            '儲存';
+
+
+          saveButton.onclick =
+            async () => {
+
+              await saveVendorMaster(
+                vendor.id,
+                {
+                  sortOrder:
+                    Number(
+                      sortInput.value
+                    ),
+
+                  enabled:
+                    enabledInput.checked
+                }
+              );
+            };
+
+
+          saveCell.appendChild(
+            saveButton
+          );
+
+
+          [
+            nameCell,
+            sortCell,
+            enabledCell,
+            saveCell
+          ]
+          .forEach(
+            cell => {
+
+              row.appendChild(
+                cell
+              );
+            }
+          );
+
+
+          body.appendChild(
+            row
+          );
+        }
+      );
+    }
+
+
+    async function addTankMaster() {
+
+      const tankNo =
+        document
+          .getElementById(
+            'new-tank-no'
+          )
+          .value
+          .trim();
+
+
+      const product =
+        document
+          .getElementById(
+            'new-tank-product'
+          )
+          .value
+          .trim();
+
+
+      const maxLevel =
+        Number(
+          document
+            .getElementById(
+              'new-tank-max'
+            )
+            .value
+        );
+
+
+      const category =
+        document
+          .getElementById(
+            'new-tank-category'
+          )
+          .value;
+
+
+      const sortOrder =
+        Number(
+          document
+            .getElementById(
+              'new-tank-sort'
+            )
+            .value
+        );
+
+
+      if (
+        !tankNo ||
+        !product ||
+        !Number.isFinite(maxLevel) ||
+        maxLevel <= 0
+      ) {
+
+        alert(
+          '⚠️ 請完整輸入桶槽編號、品名與上限'
+        );
+
+        return;
+      }
+
+
+      if (
+        !confirm(
+          `確定新增桶槽 ${tankNo} 嗎？`
+        )
+      ) {
+        return;
+      }
+
+
+      try {
+
+        const result =
+          await adminRequest(
+            '/api/admin/tanks',
+            {
+              method:
+                'POST',
+
+              body:
+                JSON.stringify({
+                  tankNo,
+                  product,
+                  maxLevel,
+                  category,
+                  sortOrder
+                })
+            }
+          );
+
+
+        alert(
+          `✅ ${result.message}`
+        );
+
+
+        document
+          .getElementById(
+            'new-tank-no'
+          )
+          .value =
+          '';
+
+
+        document
+          .getElementById(
+            'new-tank-product'
+          )
+          .value =
+          '';
+
+
+        document
+          .getElementById(
+            'new-tank-max'
+          )
+          .value =
+          '';
+
+
+        await refreshAfterAdminChange();
+
+
+      } catch (
+        error
+      ) {
+
+        alert(
+          `⚠️ ${error.message}`
+        );
+      }
+    }
+
+
+    async function saveTankMaster(
+      tankNo,
+      values
+    ) {
+
+      if (
+        !confirm(
+          `確定儲存 ${tankNo} 的設定嗎？`
+        )
+      ) {
+        return;
+      }
+
+
+      try {
+
+        const result =
+          await adminRequest(
+            `/api/admin/tanks/${encodeURIComponent(tankNo)}`,
+            {
+              method:
+                'PATCH',
+
+              body:
+                JSON.stringify(
+                  values
+                )
+            }
+          );
+
+
+        alert(
+          `✅ ${result.message}`
+        );
+
+
+        await refreshAfterAdminChange();
+
+
+      } catch (
+        error
+      ) {
+
+        alert(
+          `⚠️ ${error.message}`
+        );
+      }
+    }
+
+
+    async function addVendorMaster() {
+
+      const vendorName =
+        document
+          .getElementById(
+            'new-vendor-name'
+          )
+          .value
+          .trim();
+
+
+      const sortOrder =
+        Number(
+          document
+            .getElementById(
+              'new-vendor-sort'
+            )
+            .value
+        );
+
+
+      if (
+        !vendorName
+      ) {
+
+        alert(
+          '⚠️ 請輸入廠商名稱'
+        );
+
+        return;
+      }
+
+
+      if (
+        !confirm(
+          `確定新增廠商「${vendorName}」嗎？`
+        )
+      ) {
+        return;
+      }
+
+
+      try {
+
+        const result =
+          await adminRequest(
+            '/api/admin/vendors',
+            {
+              method:
+                'POST',
+
+              body:
+                JSON.stringify({
+                  vendorName,
+                  sortOrder
+                })
+            }
+          );
+
+
+        alert(
+          `✅ ${result.message}`
+        );
+
+
+        document
+          .getElementById(
+            'new-vendor-name'
+          )
+          .value =
+          '';
+
+
+        await refreshAfterAdminChange();
+
+
+      } catch (
+        error
+      ) {
+
+        alert(
+          `⚠️ ${error.message}`
+        );
+      }
+    }
+
+
+    async function saveVendorMaster(
+      id,
+      values
+    ) {
+
+      if (
+        !confirm(
+          '確定儲存此廠商設定嗎？'
+        )
+      ) {
+        return;
+      }
+
+
+      try {
+
+        const result =
+          await adminRequest(
+            `/api/admin/vendors/${encodeURIComponent(id)}`,
+            {
+              method:
+                'PATCH',
+
+              body:
+                JSON.stringify(
+                  values
+                )
+            }
+          );
+
+
+        alert(
+          `✅ ${result.message}`
+        );
+
+
+        await refreshAfterAdminChange();
+
+
+      } catch (
+        error
+      ) {
+
+        alert(
+          `⚠️ ${error.message}`
+        );
+      }
+    }
+
+
+    async function refreshAfterAdminChange() {
+
+      const token =
+        getToken();
+
+
+      await loadSystemConfig(
+        token
+      );
+
+
+      // 重新連 Socket，讓重新建立的桶槽卡片
+      // 立即取得目前液位與廠商狀態
+      connectSocket(
+        token
+      );
+
+
+      await loadAdminConfig();
+    }
+
+
     // ==========================================
     // 操作紀錄
     // ==========================================
@@ -3646,6 +5160,27 @@
 
     document
       .getElementById(
+        'settings-overlay'
+      )
+      .addEventListener(
+        'click',
+        function(
+          event
+        ) {
+
+          if (
+            event.target ===
+            this
+          ) {
+
+            closeSettings();
+          }
+        }
+      );
+
+
+    document
+      .getElementById(
         'history-overlay'
       )
       .addEventListener(
@@ -3679,6 +5214,7 @@
         ) {
 
           closeHistory();
+          closeSettings();
         }
       }
     );
