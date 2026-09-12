@@ -22,7 +22,7 @@ const validAccounts = {
 
 
 // =====================================================
-// PostgreSQL
+// PostgreSQL 連線
 // =====================================================
 
 const pool = new Pool({
@@ -34,12 +34,16 @@ const pool = new Pool({
 
 
 // =====================================================
-// 建立資料表
+// 初始化資料庫
 // =====================================================
 
 async function initDatabase() {
 
     try {
+
+        // -----------------------------------------
+        // 最新桶槽狀態
+        // -----------------------------------------
 
         await pool.query(`
             CREATE TABLE IF NOT EXISTS tank_state (
@@ -52,7 +56,33 @@ async function initDatabase() {
             )
         `);
 
-        console.log('✅ PostgreSQL tank_state 資料表已就緒');
+
+        // -----------------------------------------
+        // 歷史操作紀錄
+        // -----------------------------------------
+
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS tank_history (
+                id BIGSERIAL PRIMARY KEY,
+                tank_no VARCHAR(20) NOT NULL,
+                old_level NUMERIC,
+                new_level NUMERIC,
+                old_vendors JSONB NOT NULL DEFAULT '[]'::jsonb,
+                new_vendors JSONB NOT NULL DEFAULT '[]'::jsonb,
+                updated_by VARCHAR(50) NOT NULL,
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            )
+        `);
+
+
+        console.log(
+            '✅ PostgreSQL tank_state 資料表已就緒'
+        );
+
+        console.log(
+            '✅ PostgreSQL tank_history 資料表已就緒'
+        );
+
 
     } catch (error) {
 
@@ -61,13 +91,14 @@ async function initDatabase() {
             error
         );
 
+        throw error;
     }
 
 }
 
 
 // =====================================================
-// 從 PostgreSQL 讀取全部桶槽狀態
+// 讀取全部桶槽目前狀態
 // =====================================================
 
 async function loadAllTankStates() {
@@ -85,18 +116,32 @@ async function loadAllTankStates() {
             ORDER BY tank_no
         `);
 
+
     const state = {};
+
 
     result.rows.forEach(row => {
 
         state[row.tank_no] = {
-            tankNo: row.tank_no,
-            level: Number(row.level),
-            vendors: row.vendors || [],
-            timeStr: row.time_str || ""
+
+            tankNo:
+                row.tank_no,
+
+            level:
+                Number(row.level),
+
+            vendors:
+                Array.isArray(row.vendors)
+                    ? row.vendors
+                    : [],
+
+            timeStr:
+                row.time_str || ""
+
         };
 
     });
+
 
     return state;
 
@@ -104,7 +149,59 @@ async function loadAllTankStates() {
 
 
 // =====================================================
-// 儲存桶槽狀態
+// 讀取單一桶槽目前狀態
+// =====================================================
+
+async function getTankState(tankNo) {
+
+    const result =
+        await pool.query(
+            `
+            SELECT
+                level,
+                vendors
+            FROM tank_state
+            WHERE tank_no = $1
+            `,
+            [
+                tankNo
+            ]
+        );
+
+
+    if (
+        result.rows.length === 0
+    ) {
+
+        return {
+            level: 0,
+            vendors: []
+        };
+
+    }
+
+
+    return {
+
+        level:
+            Number(
+                result.rows[0].level
+            ),
+
+        vendors:
+            Array.isArray(
+                result.rows[0].vendors
+            )
+                ? result.rows[0].vendors
+                : []
+
+    };
+
+}
+
+
+// =====================================================
+// 儲存目前狀態
 // =====================================================
 
 async function saveTankState(
@@ -118,6 +215,7 @@ async function saveTankState(
         vendors,
         timeStr
     } = data;
+
 
     await pool.query(
         `
@@ -151,7 +249,9 @@ async function saveTankState(
         [
             tankNo,
             level,
-            JSON.stringify(vendors || []),
+            JSON.stringify(
+                vendors || []
+            ),
             timeStr || "",
             username
         ]
@@ -161,223 +261,404 @@ async function saveTankState(
 
 
 // =====================================================
-// Login
+// 儲存歷史紀錄
 // =====================================================
 
-app.post('/api/login', (req, res) => {
+async function saveTankHistory(
+    tankNo,
+    oldState,
+    newState,
+    username
+) {
 
-    const {
-        username,
-        password
-    } = req.body;
+    await pool.query(
+        `
+        INSERT INTO tank_history (
+            tank_no,
+            old_level,
+            new_level,
+            old_vendors,
+            new_vendors,
+            updated_by,
+            updated_at
+        )
 
-    if (
-        validAccounts[username] &&
-        validAccounts[username] === password
-    ) {
+        VALUES (
+            $1,
+            $2,
+            $3,
+            $4::jsonb,
+            $5::jsonb,
+            $6,
+            NOW()
+        )
+        `,
+        [
+            tankNo,
 
-        const token = jwt.sign(
-            {
-                username: username
-            },
-            JWT_SECRET,
-            {
-                expiresIn: '8h'
-            }
-        );
+            oldState.level,
 
-        return res.json({
-            success: true,
-            token: token
-        });
+            newState.level,
+
+            JSON.stringify(
+                oldState.vendors || []
+            ),
+
+            JSON.stringify(
+                newState.vendors || []
+            ),
+
+            username
+        ]
+    );
+
+}
+
+
+// =====================================================
+// Login API
+// =====================================================
+
+app.post(
+    '/api/login',
+    (req, res) => {
+
+        const {
+            username,
+            password
+        } = req.body;
+
+
+        if (
+            validAccounts[username] &&
+            validAccounts[username] === password
+        ) {
+
+            const token =
+                jwt.sign(
+                    {
+                        username:
+                            username
+                    },
+                    JWT_SECRET,
+                    {
+                        expiresIn:
+                            '8h'
+                    }
+                );
+
+
+            return res.json({
+                success: true,
+                token: token
+            });
+
+        }
+
+
+        return res
+            .status(401)
+            .json({
+                success: false
+            });
 
     }
-
-    return res.status(401).json({
-        success: false
-    });
-
-});
+);
 
 
 // =====================================================
-// Socket JWT 驗證
+// Socket.IO JWT 驗證
 // =====================================================
 
-io.use((socket, next) => {
+io.use(
+    (socket, next) => {
 
-    const token =
-        socket.handshake.auth.token;
+        const token =
+            socket
+                .handshake
+                .auth
+                .token;
 
-    if (!token) {
 
-        return next(
-            new Error('未登入')
-        );
+        if (!token) {
 
-    }
-
-    try {
-
-        const decoded =
-            jwt.verify(
-                token,
-                JWT_SECRET
+            return next(
+                new Error(
+                    '未登入'
+                )
             );
 
-        socket.user =
-            decoded;
+        }
 
-        next();
 
-    } catch (error) {
+        try {
 
-        return next(
-            new Error('登入已失效')
-        );
+            const decoded =
+                jwt.verify(
+                    token,
+                    JWT_SECRET
+                );
+
+
+            socket.user =
+                decoded;
+
+
+            next();
+
+
+        } catch (error) {
+
+            return next(
+                new Error(
+                    '登入已失效'
+                )
+            );
+
+        }
 
     }
-
-});
+);
 
 
 // =====================================================
 // Socket.IO
 // =====================================================
 
-io.on('connection', async (socket) => {
+io.on(
+    'connection',
+    async socket => {
 
-    console.log(
-        `✅ ${socket.user.username} 已連線`
-    );
-
-
-    try {
-
-        const globalState =
-            await loadAllTankStates();
-
-        socket.emit(
-            'init_data',
-            globalState
+        console.log(
+            `✅ ${socket.user.username} 已連線`
         );
 
-    } catch (error) {
 
-        console.error(
-            '❌ 讀取桶槽資料失敗:',
-            error
-        );
+        // -----------------------------------------
+        // 連線後讀取目前所有桶槽狀態
+        // -----------------------------------------
 
-    }
+        try {
 
-
-    socket.on(
-        'tank_changed',
-        async (data) => {
-
-            try {
-
-                const {
-                    tankNo,
-                    level
-                } = data;
+            const globalState =
+                await loadAllTankStates();
 
 
-                if (!tankNo) {
-
-                    return;
-
-                }
-
-
-                if (
-                    level === undefined ||
-                    level === null ||
-                    Number.isNaN(
-                        Number(level)
-                    )
-                ) {
-
-                    return;
-
-                }
+            socket.emit(
+                'init_data',
+                globalState
+            );
 
 
-                await saveTankState(
-                    {
-                        tankNo:
-                            tankNo,
+        } catch (error) {
 
-                        level:
-                            Number(level),
-
-                        vendors:
-                            Array.isArray(
-                                data.vendors
-                            )
-                                ? data.vendors
-                                : [],
-
-                        timeStr:
-                            data.timeStr || ""
-                    },
-                    socket.user.username
-                );
-
-
-                console.log(
-                    `📝 ${socket.user.username} 修改 ${tankNo}：${level}`
-                );
-
-
-                socket.broadcast.emit(
-                    'sync_tank',
-                    {
-                        tankNo:
-                            tankNo,
-
-                        level:
-                            Number(level),
-
-                        vendors:
-                            Array.isArray(
-                                data.vendors
-                            )
-                                ? data.vendors
-                                : [],
-
-                        timeStr:
-                            data.timeStr || ""
-                    }
-                );
-
-
-            } catch (error) {
-
-                console.error(
-                    '❌ 儲存桶槽資料失敗:',
-                    error
-                );
-
-            }
-
-        }
-    );
-
-
-    socket.on(
-        'disconnect',
-        () => {
-
-            console.log(
-                `❌ ${socket.user.username} 已離線`
+            console.error(
+                '❌ 讀取桶槽資料失敗:',
+                error
             );
 
         }
-    );
 
-});
+
+        // -----------------------------------------
+        // 接收桶槽修改
+        // -----------------------------------------
+
+        socket.on(
+            'tank_changed',
+            async data => {
+
+                try {
+
+                    const tankNo =
+                        data.tankNo;
+
+
+                    if (!tankNo) {
+
+                        console.log(
+                            '⚠️ 收到沒有 tankNo 的資料'
+                        );
+
+                        return;
+                    }
+
+
+                    const level =
+                        Number(
+                            data.level
+                        );
+
+
+                    if (
+                        !Number.isFinite(
+                            level
+                        )
+                    ) {
+
+                        console.log(
+                            `⚠️ ${tankNo} 液位格式錯誤`
+                        );
+
+                        return;
+                    }
+
+
+                    if (
+                        level < 0
+                    ) {
+
+                        console.log(
+                            `⚠️ ${tankNo} 液位不可小於 0`
+                        );
+
+                        return;
+                    }
+
+
+                    const vendors =
+                        Array.isArray(
+                            data.vendors
+                        )
+                            ? data.vendors
+                            : [];
+
+
+                    const timeStr =
+                        typeof data.timeStr ===
+                        'string'
+
+                            ? data.timeStr
+
+                            : "";
+
+
+                    // ---------------------------------
+                    // 1. 先讀取修改前資料
+                    // ---------------------------------
+
+                    const oldState =
+                        await getTankState(
+                            tankNo
+                        );
+
+
+                    const newState = {
+
+                        level:
+                            level,
+
+                        vendors:
+                            vendors
+
+                    };
+
+
+                    // ---------------------------------
+                    // 2. 更新目前狀態
+                    // ---------------------------------
+
+                    await saveTankState(
+                        {
+
+                            tankNo:
+                                tankNo,
+
+                            level:
+                                level,
+
+                            vendors:
+                                vendors,
+
+                            timeStr:
+                                timeStr
+
+                        },
+
+                        socket.user.username
+                    );
+
+
+                    // ---------------------------------
+                    // 3. 寫入歷史紀錄
+                    // ---------------------------------
+
+                    await saveTankHistory(
+
+                        tankNo,
+
+                        oldState,
+
+                        newState,
+
+                        socket.user.username
+
+                    );
+
+
+                    // ---------------------------------
+                    // 4. Render Log
+                    // ---------------------------------
+
+                    console.log(
+                        `📝 ${socket.user.username} 修改 ${tankNo}：${oldState.level} → ${level}`
+                    );
+
+
+                    // ---------------------------------
+                    // 5. 同步給其他登入裝置
+                    // ---------------------------------
+
+                    socket.broadcast.emit(
+                        'sync_tank',
+                        {
+
+                            tankNo:
+                                tankNo,
+
+                            level:
+                                level,
+
+                            vendors:
+                                vendors,
+
+                            timeStr:
+                                timeStr
+
+                        }
+                    );
+
+
+                } catch (error) {
+
+                    console.error(
+                        '❌ 儲存桶槽資料失敗:',
+                        error
+                    );
+
+                }
+
+            }
+        );
+
+
+        // -----------------------------------------
+        // 使用者離線
+        // -----------------------------------------
+
+        socket.on(
+            'disconnect',
+            () => {
+
+                console.log(
+                    `❌ ${socket.user.username} 已離線`
+                );
+
+            }
+        );
+
+    }
+);
 
 
 // =====================================================
@@ -391,19 +672,34 @@ const PORT =
 
 async function startServer() {
 
-    await initDatabase();
+    try {
 
-    server.listen(
-        PORT,
-        '0.0.0.0',
-        () => {
+        await initDatabase();
 
-            console.log(
-                `🚀 雲端伺服器啟動！Port: ${PORT}`
-            );
 
-        }
-    );
+        server.listen(
+            PORT,
+            '0.0.0.0',
+            () => {
+
+                console.log(
+                    `🚀 雲端伺服器啟動！Port: ${PORT}`
+                );
+
+            }
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            '❌ Server 啟動失敗:',
+            error
+        );
+
+        process.exit(1);
+
+    }
 
 }
 
