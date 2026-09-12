@@ -27,6 +27,21 @@ const validAccounts = {
 
 
 // =====================================================
+// 管理者帳號
+// 預設只有 1001
+// 日後可在 Render 新增：
+// ADMIN_USERS=1001,1002
+// =====================================================
+
+const ADMIN_USERS = new Set(
+    (process.env.ADMIN_USERS || '1001')
+        .split(',')
+        .map(value => value.trim())
+        .filter(Boolean)
+);
+
+
+// =====================================================
 // PostgreSQL
 // =====================================================
 
@@ -40,7 +55,6 @@ const pool = new Pool({
 
 // =====================================================
 // 初始桶槽資料
-// 只在資料庫沒有該桶號時新增，不會覆蓋既有設定
 // =====================================================
 
 const INITIAL_TANKS = [
@@ -48,26 +62,21 @@ const INITIAL_TANKS = [
     ["TK-02", "液鹼 (45%)", 60, "液鹼", 2],
     ["TK-37", "液鹼45%", 60, "液鹼", 3],
     ["TK-45", "液鹼45%", 30, "液鹼", 4],
-
     ["TK-06", "鹽酸 (32%)", 60, "鹽酸", 5],
     ["TK-07", "鹽酸 (32%)", 60, "鹽酸", 6],
     ["TK-08", "鹽酸 (32%)", 60, "鹽酸", 7],
     ["TK-09", "鹽酸 (32%)", 60, "鹽酸", 8],
     ["TK-13", "鹽酸 (HCl)", 90, "鹽酸", 9],
-
     ["TK-12", "純水", 90, "其它", 10],
-
     ["TK-10", "硝酸 (40%)", 80, "硝酸", 11],
     ["TK-41", "硝酸 (55%)", 30, "硝酸", 12],
     ["TK-42", "硝酸 (50%)", 30, "硝酸", 13],
-
     ["TK-03", "硫酸 (50%)", 60, "硫酸", 14],
     ["TK-05", "硫酸 (50%)", 60, "硫酸", 15],
     ["TK-11", "硫酸 (50%)", 80, "硫酸", 16],
     ["TK-16", "硫酸 (50%)", 90, "硫酸", 17],
     ["TK-39", "BM硫酸 (60%)", 60, "硫酸", 18],
     ["TK-40", "硫酸 (98%)", 60, "硫酸", 19],
-
     ["TK-38", "氯化鐵", 60, "其它", 20],
     ["TK-15", "碳酸鈉", 60, "其它", 21]
 ];
@@ -96,14 +105,176 @@ const INITIAL_VENDORS = [
 
 
 // =====================================================
+// 共用驗證
+// =====================================================
+
+const ALLOWED_CATEGORIES =
+    new Set([
+        '硫酸',
+        '鹽酸',
+        '硝酸',
+        '液鹼',
+        '其它'
+    ]);
+
+
+function isAdminUsername(username) {
+    return ADMIN_USERS.has(
+        String(username || '')
+    );
+}
+
+
+function normalizeSortOrder(value) {
+
+    const number =
+        Number(value);
+
+
+    if (
+        !Number.isInteger(number) ||
+        number < 0 ||
+        number > 10000
+    ) {
+        return null;
+    }
+
+
+    return number;
+}
+
+
+function validateTankMasterInput(body) {
+
+    const tankNo =
+        typeof body.tankNo === 'string'
+            ? body.tankNo.trim()
+            : '';
+
+
+    const product =
+        typeof body.product === 'string'
+            ? body.product.trim()
+            : '';
+
+
+    const maxLevel =
+        Number(body.maxLevel);
+
+
+    const category =
+        typeof body.category === 'string'
+            ? body.category.trim()
+            : '';
+
+
+    const sortOrder =
+        normalizeSortOrder(
+            body.sortOrder
+        );
+
+
+    if (
+        !/^[A-Za-z0-9_-]{1,20}$/.test(
+            tankNo
+        )
+    ) {
+        return {
+            success: false,
+            message: '桶槽編號格式錯誤'
+        };
+    }
+
+
+    if (
+        product.length < 1 ||
+        product.length > 100
+    ) {
+        return {
+            success: false,
+            message: '品名長度錯誤'
+        };
+    }
+
+
+    if (
+        !Number.isFinite(maxLevel) ||
+        maxLevel <= 0 ||
+        maxLevel > 100000
+    ) {
+        return {
+            success: false,
+            message: '桶槽上限必須大於 0'
+        };
+    }
+
+
+    if (
+        !ALLOWED_CATEGORIES.has(
+            category
+        )
+    ) {
+        return {
+            success: false,
+            message: '桶槽分類錯誤'
+        };
+    }
+
+
+    if (
+        sortOrder === null
+    ) {
+        return {
+            success: false,
+            message: '排序必須是 0 到 10000 的整數'
+        };
+    }
+
+
+    return {
+        success: true,
+        data: {
+            tankNo,
+            product,
+            maxLevel,
+            category,
+            sortOrder
+        }
+    };
+}
+
+
+function validateVendorName(value) {
+
+    const vendorName =
+        typeof value === 'string'
+            ? value.trim()
+            : '';
+
+
+    if (
+        vendorName.length < 1 ||
+        vendorName.length > 100
+    ) {
+        return {
+            success: false,
+            message: '廠商名稱長度錯誤'
+        };
+    }
+
+
+    return {
+        success: true,
+        vendorName
+    };
+}
+
+
+// =====================================================
 // 初始化資料庫
 // =====================================================
 
 async function initDatabase() {
-
-    // -----------------------------
-    // 現有桶槽狀態
-    // -----------------------------
 
     await pool.query(`
         CREATE TABLE IF NOT EXISTS tank_state (
@@ -116,10 +287,6 @@ async function initDatabase() {
         )
     `);
 
-
-    // -----------------------------
-    // 現有操作歷史
-    // -----------------------------
 
     await pool.query(`
         CREATE TABLE IF NOT EXISTS tank_history (
@@ -135,10 +302,6 @@ async function initDatabase() {
     `);
 
 
-    // -----------------------------
-    // 桶槽主檔
-    // -----------------------------
-
     await pool.query(`
         CREATE TABLE IF NOT EXISTS tank_master (
             tank_no VARCHAR(20) PRIMARY KEY,
@@ -153,10 +316,6 @@ async function initDatabase() {
     `);
 
 
-    // -----------------------------
-    // 廠商主檔
-    // -----------------------------
-
     await pool.query(`
         CREATE TABLE IF NOT EXISTS vendor_master (
             id BIGSERIAL PRIMARY KEY,
@@ -168,10 +327,6 @@ async function initDatabase() {
         )
     `);
 
-
-    // -----------------------------
-    // 匯入初始桶槽
-    // -----------------------------
 
     for (const tank of INITIAL_TANKS) {
 
@@ -216,10 +371,6 @@ async function initDatabase() {
     }
 
 
-    // -----------------------------
-    // 匯入初始廠商
-    // -----------------------------
-
     for (const vendor of INITIAL_VENDORS) {
 
         const [
@@ -259,10 +410,14 @@ async function initDatabase() {
 
 
 // =====================================================
-// API JWT 驗證
+// API JWT
 // =====================================================
 
-function verifyApiToken(req, res, next) {
+function verifyApiToken(
+    req,
+    res,
+    next
+) {
 
     const authHeader =
         req.headers.authorization;
@@ -270,14 +425,17 @@ function verifyApiToken(req, res, next) {
 
     if (
         !authHeader ||
-        !authHeader.startsWith('Bearer ')
+        !authHeader.startsWith(
+            'Bearer '
+        )
     ) {
 
-        return res.status(401).json({
-            success: false,
-            message: '未登入'
-        });
-
+        return res
+            .status(401)
+            .json({
+                success: false,
+                message: '未登入'
+            });
     }
 
 
@@ -302,13 +460,39 @@ function verifyApiToken(req, res, next) {
 
     } catch (error) {
 
-        return res.status(401).json({
-            success: false,
-            message: '登入已失效'
-        });
+        return res
+            .status(401)
+            .json({
+                success: false,
+                message: '登入已失效'
+            });
+    }
+}
 
+
+function verifyAdmin(
+    req,
+    res,
+    next
+) {
+
+    if (
+        !req.user ||
+        !isAdminUsername(
+            req.user.username
+        )
+    ) {
+
+        return res
+            .status(403)
+            .json({
+                success: false,
+                message: '您沒有系統設定權限'
+            });
     }
 
+
+    next();
 }
 
 
@@ -330,13 +514,14 @@ function getTaipeiTimeString() {
             second: '2-digit',
             hour12: false
         }
-    ).format(new Date());
-
+    ).format(
+        new Date()
+    );
 }
 
 
 // =====================================================
-// 讀取啟用中的桶槽設定
+// 主檔讀取
 // =====================================================
 
 async function loadTankMaster() {
@@ -357,20 +542,20 @@ async function loadTankMaster() {
         `);
 
 
-    return result.rows.map(row => ({
-        tankNo: row.tank_no,
-        product: row.product,
-        maxLevel: Number(row.max_level),
-        category: row.category,
-        sortOrder: row.sort_order
-    }));
-
+    return result.rows.map(
+        row => ({
+            tankNo: row.tank_no,
+            product: row.product,
+            maxLevel:
+                Number(
+                    row.max_level
+                ),
+            category: row.category,
+            sortOrder: row.sort_order
+        })
+    );
 }
 
-
-// =====================================================
-// 讀取啟用中的廠商
-// =====================================================
 
 async function loadVendorMaster() {
 
@@ -388,20 +573,80 @@ async function loadVendorMaster() {
         `);
 
 
-    return result.rows.map(row => ({
-        id: row.id,
-        vendorName: row.vendor_name,
-        sortOrder: row.sort_order
-    }));
-
+    return result.rows.map(
+        row => ({
+            id: row.id,
+            vendorName: row.vendor_name,
+            sortOrder: row.sort_order
+        })
+    );
 }
 
 
-// =====================================================
-// 檢查桶槽是否存在且啟用
-// =====================================================
+async function loadAdminTankMaster() {
 
-async function getActiveTank(tankNo) {
+    const result =
+        await pool.query(`
+            SELECT
+                tank_no,
+                product,
+                max_level,
+                category,
+                sort_order,
+                enabled
+            FROM tank_master
+            ORDER BY
+                sort_order ASC,
+                tank_no ASC
+        `);
+
+
+    return result.rows.map(
+        row => ({
+            tankNo: row.tank_no,
+            product: row.product,
+            maxLevel:
+                Number(
+                    row.max_level
+                ),
+            category: row.category,
+            sortOrder: row.sort_order,
+            enabled: row.enabled
+        })
+    );
+}
+
+
+async function loadAdminVendorMaster() {
+
+    const result =
+        await pool.query(`
+            SELECT
+                id,
+                vendor_name,
+                sort_order,
+                enabled
+            FROM vendor_master
+            ORDER BY
+                sort_order ASC,
+                vendor_name ASC
+        `);
+
+
+    return result.rows.map(
+        row => ({
+            id: row.id,
+            vendorName: row.vendor_name,
+            sortOrder: row.sort_order,
+            enabled: row.enabled
+        })
+    );
+}
+
+
+async function getActiveTank(
+    tankNo
+) {
 
     const result =
         await pool.query(
@@ -416,7 +661,9 @@ async function getActiveTank(tankNo) {
                 tank_no = $1
                 AND enabled = TRUE
             `,
-            [tankNo]
+            [
+                tankNo
+            ]
         );
 
 
@@ -428,95 +675,25 @@ async function getActiveTank(tankNo) {
 
 
     return {
-        tankNo: result.rows[0].tank_no,
-        product: result.rows[0].product,
-        maxLevel: Number(result.rows[0].max_level),
-        category: result.rows[0].category
-    };
+        tankNo:
+            result.rows[0].tank_no,
 
+        product:
+            result.rows[0].product,
+
+        maxLevel:
+            Number(
+                result.rows[0].max_level
+            ),
+
+        category:
+            result.rows[0].category
+    };
 }
 
 
 // =====================================================
-// 檢查廠商是否存在且啟用
-// 注意：允許同一天重複同一廠商
-// =====================================================
-
-async function validateVendors(vendors) {
-
-    if (
-        !Array.isArray(vendors)
-    ) {
-        return {
-            success: false,
-            message: '廠商資料格式錯誤'
-        };
-    }
-
-
-    const cleanedVendors = [];
-
-
-    for (const vendor of vendors) {
-
-        if (
-            typeof vendor !== 'string'
-        ) {
-            return {
-                success: false,
-                message: '廠商資料格式錯誤'
-            };
-        }
-
-
-        const vendorName =
-            vendor.trim();
-
-
-        const result =
-            await pool.query(
-                `
-                SELECT vendor_name
-                FROM vendor_master
-                WHERE
-                    vendor_name = $1
-                    AND enabled = TRUE
-                `,
-                [vendorName]
-            );
-
-
-        if (
-            result.rows.length === 0
-        ) {
-
-            return {
-                success: false,
-                message: `廠商不存在或已停用：${vendorName}`
-            };
-
-        }
-
-
-        // 刻意不去重
-        // 同一個廠商可以一天出現很多次
-        cleanedVendors.push(
-            vendorName
-        );
-
-    }
-
-
-    return {
-        success: true,
-        vendors: cleanedVendors
-    };
-
-}
-
-
-// =====================================================
-// 讀取全部目前桶槽狀態
+// 目前桶槽狀態
 // =====================================================
 
 async function loadAllTankStates() {
@@ -538,36 +715,269 @@ async function loadAllTankStates() {
     const state = {};
 
 
-    result.rows.forEach(row => {
+    result.rows.forEach(
+        row => {
 
-        state[row.tank_no] = {
-            tankNo: row.tank_no,
-            level: Number(row.level),
-            vendors:
-                Array.isArray(row.vendors)
-                    ? row.vendors
-                    : [],
-            timeStr:
-                row.time_str || ""
-        };
+            state[
+                row.tank_no
+            ] = {
+                tankNo:
+                    row.tank_no,
 
-    });
+                level:
+                    Number(
+                        row.level
+                    ),
+
+                vendors:
+                    Array.isArray(
+                        row.vendors
+                    )
+                        ? row.vendors
+                        : [],
+
+                timeStr:
+                    row.time_str || ""
+            };
+        }
+    );
 
 
     return state;
+}
 
+
+// =====================================================
+// 廠商資料驗證
+// 允許同一天重複同一家廠商。
+// 已停用廠商若原本已經在桶槽中，可以保留或移除；
+// 但不能再新增更多筆。
+// =====================================================
+
+function countItems(
+    array
+) {
+
+    const counts =
+        new Map();
+
+
+    array.forEach(
+        item => {
+
+            counts.set(
+                item,
+                (
+                    counts.get(
+                        item
+                    ) || 0
+                ) + 1
+            );
+        }
+    );
+
+
+    return counts;
+}
+
+
+async function validateVendorChanges(
+    client,
+    oldVendors,
+    requestedVendors
+) {
+
+    if (
+        !Array.isArray(
+            requestedVendors
+        )
+    ) {
+
+        return {
+            success: false,
+            message: '廠商資料格式錯誤'
+        };
+    }
+
+
+    const cleaned =
+        [];
+
+
+    for (
+        const value
+        of requestedVendors
+    ) {
+
+        if (
+            typeof value !==
+            'string'
+        ) {
+
+            return {
+                success: false,
+                message: '廠商資料格式錯誤'
+            };
+        }
+
+
+        const name =
+            value.trim();
+
+
+        if (
+            name.length < 1 ||
+            name.length > 100
+        ) {
+
+            return {
+                success: false,
+                message: '廠商名稱格式錯誤'
+            };
+        }
+
+
+        cleaned.push(
+            name
+        );
+    }
+
+
+    const uniqueNames =
+        [
+            ...new Set(
+                cleaned
+            )
+        ];
+
+
+    if (
+        uniqueNames.length === 0
+    ) {
+
+        return {
+            success: true,
+            vendors: []
+        };
+    }
+
+
+    const result =
+        await client.query(
+            `
+            SELECT
+                vendor_name,
+                enabled
+            FROM vendor_master
+            WHERE vendor_name = ANY($1::text[])
+            `,
+            [
+                uniqueNames
+            ]
+        );
+
+
+    const vendorMap =
+        new Map(
+            result.rows.map(
+                row => [
+                    row.vendor_name,
+                    row.enabled
+                ]
+            )
+        );
+
+
+    for (
+        const name
+        of uniqueNames
+    ) {
+
+        if (
+            !vendorMap.has(
+                name
+            )
+        ) {
+
+            return {
+                success: false,
+                message:
+                    `廠商不存在：${name}`
+            };
+        }
+    }
+
+
+    const oldCounts =
+        countItems(
+            oldVendors
+        );
+
+
+    const newCounts =
+        countItems(
+            cleaned
+        );
+
+
+    for (
+        const [
+            name,
+            enabled
+        ]
+        of vendorMap.entries()
+    ) {
+
+        if (
+            !enabled
+        ) {
+
+            const oldCount =
+                oldCounts.get(
+                    name
+                ) || 0;
+
+
+            const newCount =
+                newCounts.get(
+                    name
+                ) || 0;
+
+
+            if (
+                newCount >
+                oldCount
+            ) {
+
+                return {
+                    success: false,
+                    message:
+                        `廠商已停用，無法新增：${name}`
+                };
+            }
+        }
+    }
+
+
+    return {
+        success: true,
+        vendors: cleaned
+    };
 }
 
 
 // =====================================================
 // 陣列比較
-// 這裡保留順序與重複項目
 // =====================================================
 
-function arraysEqual(a, b) {
+function arraysEqual(
+    a,
+    b
+) {
 
     if (
-        a.length !== b.length
+        a.length !==
+        b.length
     ) {
         return false;
     }
@@ -580,16 +990,15 @@ function arraysEqual(a, b) {
     ) {
 
         if (
-            a[i] !== b[i]
+            a[i] !==
+            b[i]
         ) {
             return false;
         }
-
     }
 
 
     return true;
-
 }
 
 
@@ -599,27 +1008,39 @@ function arraysEqual(a, b) {
 
 app.post(
     '/api/login',
-    (req, res) => {
+    (
+        req,
+        res
+    ) => {
 
         const {
             username,
             password
-        } = req.body;
+        } =
+        req.body;
 
 
         if (
-            validAccounts[username] &&
-            validAccounts[username] === password
+            validAccounts[
+                username
+            ] &&
+
+            validAccounts[
+                username
+            ] ===
+            password
         ) {
 
             const token =
                 jwt.sign(
                     {
-                        username: username
+                        username:
+                            username
                     },
                     JWT_SECRET,
                     {
-                        expiresIn: '8h'
+                        expiresIn:
+                            '8h'
                     }
                 );
 
@@ -628,27 +1049,54 @@ app.post(
                 success: true,
                 token: token
             });
-
         }
 
 
-        return res.status(401).json({
-            success: false
-        });
-
+        return res
+            .status(401)
+            .json({
+                success: false
+            });
     }
 );
 
 
 // =====================================================
-// 新增：前端設定 API
-// 取得桶槽主檔 + 廠商主檔
+// 使用者資訊
+// =====================================================
+
+app.get(
+    '/api/me',
+    verifyApiToken,
+    (
+        req,
+        res
+    ) => {
+
+        return res.json({
+            success: true,
+            username:
+                req.user.username,
+            isAdmin:
+                isAdminUsername(
+                    req.user.username
+                )
+        });
+    }
+);
+
+
+// =====================================================
+// 前端設定 API
 // =====================================================
 
 app.get(
     '/api/config',
     verifyApiToken,
-    async (req, res) => {
+    async (
+        req,
+        res
+    ) => {
 
         try {
 
@@ -662,10 +1110,9 @@ app.get(
 
             return res.json({
                 success: true,
-                tanks: tanks,
-                vendors: vendors
+                tanks,
+                vendors
             });
-
 
         } catch (error) {
 
@@ -675,13 +1122,573 @@ app.get(
             );
 
 
-            return res.status(500).json({
-                success: false,
-                message: '讀取系統設定失敗'
+            return res
+                .status(500)
+                .json({
+                    success: false,
+                    message:
+                        '讀取系統設定失敗'
+                });
+        }
+    }
+);
+
+
+// =====================================================
+// 管理介面：讀取全部設定
+// =====================================================
+
+app.get(
+    '/api/admin/config',
+    verifyApiToken,
+    verifyAdmin,
+    async (
+        req,
+        res
+    ) => {
+
+        try {
+
+            const tanks =
+                await loadAdminTankMaster();
+
+
+            const vendors =
+                await loadAdminVendorMaster();
+
+
+            return res.json({
+                success: true,
+                tanks,
+                vendors
             });
 
+        } catch (error) {
+
+            console.error(
+                '❌ 管理設定讀取失敗:',
+                error
+            );
+
+
+            return res
+                .status(500)
+                .json({
+                    success: false,
+                    message:
+                        '管理設定讀取失敗'
+                });
+        }
+    }
+);
+
+
+// =====================================================
+// 管理介面：新增桶槽
+// =====================================================
+
+app.post(
+    '/api/admin/tanks',
+    verifyApiToken,
+    verifyAdmin,
+    async (
+        req,
+        res
+    ) => {
+
+        const validation =
+            validateTankMasterInput(
+                req.body || {}
+            );
+
+
+        if (
+            !validation.success
+        ) {
+
+            return res
+                .status(400)
+                .json(validation);
         }
 
+
+        const {
+            tankNo,
+            product,
+            maxLevel,
+            category,
+            sortOrder
+        } =
+        validation.data;
+
+
+        try {
+
+            await pool.query(
+                `
+                INSERT INTO tank_master (
+                    tank_no,
+                    product,
+                    max_level,
+                    category,
+                    sort_order,
+                    enabled,
+                    created_at,
+                    updated_at
+                )
+                VALUES (
+                    $1,
+                    $2,
+                    $3,
+                    $4,
+                    $5,
+                    TRUE,
+                    NOW(),
+                    NOW()
+                )
+                `,
+                [
+                    tankNo,
+                    product,
+                    maxLevel,
+                    category,
+                    sortOrder
+                ]
+            );
+
+
+            console.log(
+                `⚙️ ${req.user.username} 新增桶槽 ${tankNo}`
+            );
+
+
+            return res.json({
+                success: true,
+                message:
+                    '桶槽新增完成'
+            });
+
+        } catch (error) {
+
+            if (
+                error &&
+                error.code ===
+                '23505'
+            ) {
+
+                return res
+                    .status(409)
+                    .json({
+                        success: false,
+                        message:
+                            `桶槽 ${tankNo} 已存在`
+                    });
+            }
+
+
+            console.error(
+                '❌ 新增桶槽失敗:',
+                error
+            );
+
+
+            return res
+                .status(500)
+                .json({
+                    success: false,
+                    message:
+                        '新增桶槽失敗'
+                });
+        }
+    }
+);
+
+
+// =====================================================
+// 管理介面：修改桶槽
+// 桶號本身不允許修改
+// =====================================================
+
+app.patch(
+    '/api/admin/tanks/:tankNo',
+    verifyApiToken,
+    verifyAdmin,
+    async (
+        req,
+        res
+    ) => {
+
+        const tankNo =
+            String(
+                req.params.tankNo || ''
+            ).trim();
+
+
+        const validation =
+            validateTankMasterInput({
+                tankNo,
+                product:
+                    req.body.product,
+                maxLevel:
+                    req.body.maxLevel,
+                category:
+                    req.body.category,
+                sortOrder:
+                    req.body.sortOrder
+            });
+
+
+        if (
+            !validation.success
+        ) {
+
+            return res
+                .status(400)
+                .json(validation);
+        }
+
+
+        if (
+            typeof req.body.enabled !==
+            'boolean'
+        ) {
+
+            return res
+                .status(400)
+                .json({
+                    success: false,
+                    message:
+                        '啟用狀態格式錯誤'
+                });
+        }
+
+
+        try {
+
+            const result =
+                await pool.query(
+                    `
+                    UPDATE tank_master
+                    SET
+                        product = $2,
+                        max_level = $3,
+                        category = $4,
+                        sort_order = $5,
+                        enabled = $6,
+                        updated_at = NOW()
+                    WHERE tank_no = $1
+                    `,
+                    [
+                        tankNo,
+                        validation.data.product,
+                        validation.data.maxLevel,
+                        validation.data.category,
+                        validation.data.sortOrder,
+                        req.body.enabled
+                    ]
+                );
+
+
+            if (
+                result.rowCount === 0
+            ) {
+
+                return res
+                    .status(404)
+                    .json({
+                        success: false,
+                        message:
+                            '找不到桶槽'
+                    });
+            }
+
+
+            console.log(
+                `⚙️ ${req.user.username} 修改桶槽 ${tankNo}`
+            );
+
+
+            return res.json({
+                success: true,
+                message:
+                    '桶槽設定已更新'
+            });
+
+        } catch (error) {
+
+            console.error(
+                '❌ 修改桶槽失敗:',
+                error
+            );
+
+
+            return res
+                .status(500)
+                .json({
+                    success: false,
+                    message:
+                        '修改桶槽失敗'
+                });
+        }
+    }
+);
+
+
+// =====================================================
+// 管理介面：新增廠商
+// =====================================================
+
+app.post(
+    '/api/admin/vendors',
+    verifyApiToken,
+    verifyAdmin,
+    async (
+        req,
+        res
+    ) => {
+
+        const vendorValidation =
+            validateVendorName(
+                req.body.vendorName
+            );
+
+
+        if (
+            !vendorValidation.success
+        ) {
+
+            return res
+                .status(400)
+                .json(vendorValidation);
+        }
+
+
+        const sortOrder =
+            normalizeSortOrder(
+                req.body.sortOrder
+            );
+
+
+        if (
+            sortOrder === null
+        ) {
+
+            return res
+                .status(400)
+                .json({
+                    success: false,
+                    message:
+                        '排序必須是 0 到 10000 的整數'
+                });
+        }
+
+
+        try {
+
+            await pool.query(
+                `
+                INSERT INTO vendor_master (
+                    vendor_name,
+                    sort_order,
+                    enabled,
+                    created_at,
+                    updated_at
+                )
+                VALUES (
+                    $1,
+                    $2,
+                    TRUE,
+                    NOW(),
+                    NOW()
+                )
+                `,
+                [
+                    vendorValidation.vendorName,
+                    sortOrder
+                ]
+            );
+
+
+            console.log(
+                `⚙️ ${req.user.username} 新增廠商 ${vendorValidation.vendorName}`
+            );
+
+
+            return res.json({
+                success: true,
+                message:
+                    '廠商新增完成'
+            });
+
+        } catch (error) {
+
+            if (
+                error &&
+                error.code ===
+                '23505'
+            ) {
+
+                return res
+                    .status(409)
+                    .json({
+                        success: false,
+                        message:
+                            `廠商 ${vendorValidation.vendorName} 已存在`
+                    });
+            }
+
+
+            console.error(
+                '❌ 新增廠商失敗:',
+                error
+            );
+
+
+            return res
+                .status(500)
+                .json({
+                    success: false,
+                    message:
+                        '新增廠商失敗'
+                });
+        }
+    }
+);
+
+
+// =====================================================
+// 管理介面：修改廠商
+// 名稱不允許修改，避免影響舊歷史紀錄。
+// 可修改排序、啟用/停用。
+// =====================================================
+
+app.patch(
+    '/api/admin/vendors/:id',
+    verifyApiToken,
+    verifyAdmin,
+    async (
+        req,
+        res
+    ) => {
+
+        const id =
+            Number(
+                req.params.id
+            );
+
+
+        const sortOrder =
+            normalizeSortOrder(
+                req.body.sortOrder
+            );
+
+
+        if (
+            !Number.isInteger(id) ||
+            id <= 0
+        ) {
+
+            return res
+                .status(400)
+                .json({
+                    success: false,
+                    message:
+                        '廠商 ID 錯誤'
+                });
+        }
+
+
+        if (
+            sortOrder === null
+        ) {
+
+            return res
+                .status(400)
+                .json({
+                    success: false,
+                    message:
+                        '排序必須是 0 到 10000 的整數'
+                });
+        }
+
+
+        if (
+            typeof req.body.enabled !==
+            'boolean'
+        ) {
+
+            return res
+                .status(400)
+                .json({
+                    success: false,
+                    message:
+                        '啟用狀態格式錯誤'
+                });
+        }
+
+
+        try {
+
+            const result =
+                await pool.query(
+                    `
+                    UPDATE vendor_master
+                    SET
+                        sort_order = $2,
+                        enabled = $3,
+                        updated_at = NOW()
+                    WHERE id = $1
+                    RETURNING vendor_name
+                    `,
+                    [
+                        id,
+                        sortOrder,
+                        req.body.enabled
+                    ]
+                );
+
+
+            if (
+                result.rows.length === 0
+            ) {
+
+                return res
+                    .status(404)
+                    .json({
+                        success: false,
+                        message:
+                            '找不到廠商'
+                    });
+            }
+
+
+            console.log(
+                `⚙️ ${req.user.username} 修改廠商 ${result.rows[0].vendor_name}`
+            );
+
+
+            return res.json({
+                success: true,
+                message:
+                    '廠商設定已更新'
+            });
+
+        } catch (error) {
+
+            console.error(
+                '❌ 修改廠商失敗:',
+                error
+            );
+
+
+            return res
+                .status(500)
+                .json({
+                    success: false,
+                    message:
+                        '修改廠商失敗'
+                });
+        }
     }
 );
 
@@ -693,35 +1700,46 @@ app.get(
 app.get(
     '/api/history',
     verifyApiToken,
-    async (req, res) => {
+    async (
+        req,
+        res
+    ) => {
 
         try {
 
             let limit =
-                Number(req.query.limit) ||
-                50;
+                Number(
+                    req.query.limit
+                ) || 50;
 
 
-            if (limit < 1) {
+            if (
+                limit < 1
+            ) {
                 limit = 1;
             }
 
 
-            if (limit > 200) {
+            if (
+                limit > 200
+            ) {
                 limit = 200;
             }
 
 
             const tankNo =
-                typeof req.query.tankNo === 'string'
+                typeof req.query.tankNo ===
+                'string'
                     ? req.query.tankNo.trim()
-                    : "";
+                    : '';
 
 
             let result;
 
 
-            if (tankNo) {
+            if (
+                tankNo
+            ) {
 
                 result =
                     await pool.query(
@@ -772,48 +1790,59 @@ app.get(
                             limit
                         ]
                     );
-
             }
 
 
             const history =
-                result.rows.map(row => ({
-                    id: row.id,
-                    tankNo: row.tank_no,
+                result.rows.map(
+                    row => ({
+                        id:
+                            row.id,
 
-                    oldLevel:
-                        row.old_level === null
-                            ? null
-                            : Number(row.old_level),
+                        tankNo:
+                            row.tank_no,
 
-                    newLevel:
-                        row.new_level === null
-                            ? null
-                            : Number(row.new_level),
+                        oldLevel:
+                            row.old_level === null
+                                ? null
+                                : Number(
+                                    row.old_level
+                                ),
 
-                    oldVendors:
-                        Array.isArray(row.old_vendors)
-                            ? row.old_vendors
-                            : [],
+                        newLevel:
+                            row.new_level === null
+                                ? null
+                                : Number(
+                                    row.new_level
+                                ),
 
-                    newVendors:
-                        Array.isArray(row.new_vendors)
-                            ? row.new_vendors
-                            : [],
+                        oldVendors:
+                            Array.isArray(
+                                row.old_vendors
+                            )
+                                ? row.old_vendors
+                                : [],
 
-                    updatedBy:
-                        row.updated_by,
+                        newVendors:
+                            Array.isArray(
+                                row.new_vendors
+                            )
+                                ? row.new_vendors
+                                : [],
 
-                    updatedAt:
-                        row.updated_at
-                }));
+                        updatedBy:
+                            row.updated_by,
+
+                        updatedAt:
+                            row.updated_at
+                    })
+                );
 
 
             return res.json({
                 success: true,
-                history: history
+                history
             });
-
 
         } catch (error) {
 
@@ -823,13 +1852,14 @@ app.get(
             );
 
 
-            return res.status(500).json({
-                success: false,
-                message: '讀取歷史紀錄失敗'
-            });
-
+            return res
+                .status(500)
+                .json({
+                    success: false,
+                    message:
+                        '讀取歷史紀錄失敗'
+                });
         }
-
     }
 );
 
@@ -839,18 +1869,24 @@ app.get(
 // =====================================================
 
 io.use(
-    (socket, next) => {
+    (
+        socket,
+        next
+    ) => {
 
         const token =
             socket.handshake.auth.token;
 
 
-        if (!token) {
+        if (
+            !token
+        ) {
 
             return next(
-                new Error('未登入')
+                new Error(
+                    '未登入'
+                )
             );
-
         }
 
 
@@ -872,11 +1908,11 @@ io.use(
         } catch (error) {
 
             return next(
-                new Error('登入已失效')
+                new Error(
+                    '登入已失效'
+                )
             );
-
         }
-
     }
 );
 
@@ -893,10 +1929,6 @@ io.on(
             `✅ ${socket.user.username} 已連線`
         );
 
-
-        // -----------------------------
-        // 送目前桶槽資料
-        // -----------------------------
 
         try {
 
@@ -915,29 +1947,21 @@ io.on(
                 '❌ 讀取桶槽資料失敗:',
                 error
             );
-
         }
 
-
-        // -----------------------------
-        // 桶槽修改
-        // -----------------------------
 
         socket.on(
             'tank_changed',
             async data => {
 
+                const tankNo =
+                    typeof data.tankNo ===
+                    'string'
+                        ? data.tankNo.trim()
+                        : '';
+
+
                 try {
-
-                    const tankNo =
-                        typeof data.tankNo === 'string'
-                            ? data.tankNo.trim()
-                            : "";
-
-
-                    // -------------------------
-                    // 桶槽驗證
-                    // -------------------------
 
                     const tank =
                         await getActiveTank(
@@ -945,7 +1969,9 @@ io.on(
                         );
 
 
-                    if (!tank) {
+                    if (
+                        !tank
+                    ) {
 
                         socket.emit(
                             'tank_error',
@@ -959,16 +1985,16 @@ io.on(
                     }
 
 
-                    // -------------------------
-                    // 液位驗證
-                    // -------------------------
-
                     const level =
-                        Number(data.level);
+                        Number(
+                            data.level
+                        );
 
 
                     if (
-                        !Number.isFinite(level)
+                        !Number.isFinite(
+                            level
+                        )
                     ) {
 
                         socket.emit(
@@ -999,40 +2025,6 @@ io.on(
                     }
 
 
-                    // -------------------------
-                    // 廠商驗證
-                    // -------------------------
-
-                    const vendorValidation =
-                        await validateVendors(
-                            data.vendors
-                        );
-
-
-                    if (
-                        !vendorValidation.success
-                    ) {
-
-                        socket.emit(
-                            'tank_error',
-                            {
-                                message:
-                                    vendorValidation.message
-                            }
-                        );
-
-                        return;
-                    }
-
-
-                    const vendors =
-                        vendorValidation.vendors;
-
-
-                    const serverTimeStr =
-                        getTaipeiTimeString();
-
-
                     const client =
                         await pool.connect();
 
@@ -1043,10 +2035,6 @@ io.on(
                             'BEGIN'
                         );
 
-
-                        // -------------------------
-                        // 原狀態
-                        // -------------------------
 
                         const oldResult =
                             await client.query(
@@ -1079,26 +2067,63 @@ io.on(
                         } else {
 
                             oldState = {
-
                                 level:
                                     Number(
-                                        oldResult.rows[0].level
+                                        oldResult
+                                            .rows[0]
+                                            .level
                                     ),
 
                                 vendors:
                                     Array.isArray(
-                                        oldResult.rows[0].vendors
+                                        oldResult
+                                            .rows[0]
+                                            .vendors
                                     )
-                                        ? oldResult.rows[0].vendors
+                                        ? oldResult
+                                            .rows[0]
+                                            .vendors
                                         : []
-
                             };
-
                         }
 
 
+                        const vendorValidation =
+                            await validateVendorChanges(
+                                client,
+                                oldState.vendors,
+                                data.vendors
+                            );
+
+
+                        if (
+                            !vendorValidation.success
+                        ) {
+
+                            await client.query(
+                                'ROLLBACK'
+                            );
+
+
+                            socket.emit(
+                                'tank_error',
+                                {
+                                    message:
+                                        vendorValidation.message
+                                }
+                            );
+
+                            return;
+                        }
+
+
+                        const vendors =
+                            vendorValidation.vendors;
+
+
                         const levelChanged =
-                            oldState.level !== level;
+                            oldState.level !==
+                            level;
 
 
                         const vendorsChanged =
@@ -1122,14 +2147,13 @@ io.on(
                                 `ℹ️ ${socket.user.username} ${tankNo} 無資料變更`
                             );
 
-
                             return;
                         }
 
 
-                        // -------------------------
-                        // 更新目前狀態
-                        // -------------------------
+                        const serverTimeStr =
+                            getTaipeiTimeString();
+
 
                         await client.query(
                             `
@@ -1151,25 +2175,28 @@ io.on(
                             )
                             ON CONFLICT (tank_no)
                             DO UPDATE SET
-                                level = EXCLUDED.level,
-                                vendors = EXCLUDED.vendors,
-                                time_str = EXCLUDED.time_str,
-                                updated_by = EXCLUDED.updated_by,
-                                updated_at = NOW()
+                                level =
+                                    EXCLUDED.level,
+                                vendors =
+                                    EXCLUDED.vendors,
+                                time_str =
+                                    EXCLUDED.time_str,
+                                updated_by =
+                                    EXCLUDED.updated_by,
+                                updated_at =
+                                    NOW()
                             `,
                             [
                                 tankNo,
                                 level,
-                                JSON.stringify(vendors),
+                                JSON.stringify(
+                                    vendors
+                                ),
                                 serverTimeStr,
                                 socket.user.username
                             ]
                         );
 
-
-                        // -------------------------
-                        // 歷史紀錄
-                        // -------------------------
 
                         await client.query(
                             `
@@ -1218,32 +2245,34 @@ io.on(
 
 
                         if (
-                            level > tank.maxLevel
+                            level >
+                            tank.maxLevel
                         ) {
 
                             console.warn(
                                 `⚠️ ${tankNo} 液位 ${level} 超過設定上限 ${tank.maxLevel}`
                             );
-
                         }
 
 
                         socket.broadcast.emit(
                             'sync_tank',
                             {
-                                tankNo: tankNo,
-                                level: level,
-                                vendors: vendors,
-                                timeStr: serverTimeStr
+                                tankNo,
+                                level,
+                                vendors,
+                                timeStr:
+                                    serverTimeStr
                             }
                         );
 
-
                     } catch (error) {
 
-                        await client.query(
-                            'ROLLBACK'
-                        );
+                        try {
+                            await client.query(
+                                'ROLLBACK'
+                            );
+                        } catch (_) {}
 
 
                         console.error(
@@ -1260,13 +2289,10 @@ io.on(
                             }
                         );
 
-
                     } finally {
 
                         client.release();
-
                     }
-
 
                 } catch (error) {
 
@@ -1283,9 +2309,7 @@ io.on(
                                 '系統處理資料時發生錯誤'
                         }
                     );
-
                 }
-
             }
         );
 
@@ -1297,10 +2321,8 @@ io.on(
                 console.log(
                     `❌ ${socket.user.username} 已離線`
                 );
-
             }
         );
-
     }
 );
 
@@ -1318,21 +2340,23 @@ async function startServer() {
 
     try {
 
-        if (!JWT_SECRET) {
+        if (
+            !JWT_SECRET
+        ) {
 
             throw new Error(
                 '缺少 JWT_SECRET'
             );
-
         }
 
 
-        if (!DATABASE_URL) {
+        if (
+            !DATABASE_URL
+        ) {
 
             throw new Error(
                 '缺少 DATABASE_URL'
             );
-
         }
 
 
@@ -1347,10 +2371,8 @@ async function startServer() {
                 console.log(
                     `🚀 雲端伺服器啟動！Port: ${PORT}`
                 );
-
             }
         );
-
 
     } catch (error) {
 
@@ -1361,9 +2383,7 @@ async function startServer() {
 
 
         process.exit(1);
-
     }
-
 }
 
 
