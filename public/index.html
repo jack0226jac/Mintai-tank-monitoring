@@ -888,6 +888,242 @@
         padding: 0 10px 10px 10px;
       }
     }
+
+    /* =========================================
+       v1.5.0 每日輸入總表
+       ========================================= */
+
+    .input-small-btn {
+      border: none;
+      background: #2980b9;
+      color: white;
+      border-radius: 14px;
+      padding: 5px 9px;
+      font-size: 11px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .input-small-btn:hover {
+      background: #1f6692;
+    }
+
+    #input-sheet-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 7500;
+      background: rgba(0,0,0,0.58);
+      padding: 22px;
+      overflow: auto;
+    }
+
+    .input-sheet-panel {
+      width: min(1500px, 98vw);
+      margin: 0 auto;
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 12px 45px rgba(0,0,0,0.3);
+      overflow: hidden;
+    }
+
+    .input-sheet-header {
+      position: sticky;
+      top: 0;
+      z-index: 3;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 18px;
+      background: #2c3e50;
+      color: white;
+    }
+
+    .input-sheet-title {
+      font-size: 19px;
+      font-weight: 900;
+    }
+
+    .input-sheet-close {
+      border: none;
+      background: #e74c3c;
+      color: white;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    .input-sheet-note {
+      padding: 12px 18px;
+      background: #eef7ff;
+      color: #2c3e50;
+      border-bottom: 1px solid #d9e8f4;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .input-sheet-table-wrap {
+      overflow-x: auto;
+      max-height: calc(100vh - 230px);
+      overflow-y: auto;
+    }
+
+    .input-sheet-table {
+      width: 100%;
+      min-width: 1080px;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .input-sheet-table th,
+    .input-sheet-table td {
+      border-bottom: 1px solid #e6e9ed;
+      padding: 9px 8px;
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    .input-sheet-table th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: #f5f7fa;
+      color: #2c3e50;
+      font-weight: 900;
+    }
+
+    .sheet-level-input {
+      width: 92px;
+      padding: 7px;
+      border: 1px solid #bdc3c7;
+      border-radius: 6px;
+      text-align: center;
+    }
+
+    .sheet-vendor-select {
+      min-width: 145px;
+      padding: 7px;
+      border: 1px solid #bdc3c7;
+      border-radius: 6px;
+    }
+
+    .sheet-stage-btn {
+      border: none;
+      border-radius: 6px;
+      padding: 7px 9px;
+      background: #16a085;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      margin-left: 4px;
+    }
+
+    .sheet-current-vendors,
+    .sheet-staged-vendors {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      justify-content: center;
+      min-width: 180px;
+    }
+
+    .sheet-vendor-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 7px;
+      border-radius: 12px;
+      background: #ecf0f1;
+      color: #34495e;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .sheet-vendor-tag.staged {
+      background: #e8f8f5;
+      color: #117864;
+    }
+
+    .sheet-vendor-tag.removed {
+      background: #fdecea;
+      color: #c0392b;
+      text-decoration: line-through;
+      opacity: 0.75;
+    }
+
+    .sheet-tag-remove {
+      border: none;
+      background: transparent;
+      color: #c0392b;
+      font-weight: 900;
+      cursor: pointer;
+      padding: 0 2px;
+    }
+
+    .input-sheet-footer {
+      position: sticky;
+      bottom: 0;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      padding: 12px 18px;
+      background: white;
+      border-top: 1px solid #e6e9ed;
+    }
+
+    .sheet-cancel-btn,
+    .sheet-submit-btn {
+      border: none;
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .sheet-cancel-btn {
+      background: #ecf0f1;
+      color: #34495e;
+    }
+
+    .sheet-submit-btn {
+      background: #2980b9;
+      color: white;
+    }
+
+    .sheet-submit-btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .readonly-note {
+      width: 100%;
+      margin-top: 8px;
+      padding: 7px 9px;
+      background: #f8f9fa;
+      border-radius: 7px;
+      color: #7f8c8d;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    @media (max-width: 760px) {
+      #input-sheet-overlay {
+        padding: 8px;
+      }
+
+      .input-sheet-panel {
+        width: 100%;
+      }
+
+      .input-sheet-title {
+        font-size: 16px;
+      }
+    }
+
   </style>
 </head>
 
@@ -915,6 +1151,13 @@
       onclick="openSettings()"
     >
       ⚙️ 設定
+    </button>
+
+    <button
+      class="input-small-btn"
+      onclick="openInputSheet()"
+    >
+      📝 輸入總表
     </button>
 
     <button
@@ -1004,7 +1247,7 @@
       <div
         style="margin-top:10px;font-size:10px;color:#aaa;text-align:center;"
       >
-        系統版本：v1.4.1（2026-09-13）
+        系統版本：v1.5.0（2026-09-13）
       </div>
 
     </div>
@@ -1356,6 +1599,82 @@
           </tbody>
 
         </table>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+
+  <!-- ======================================
+       v1.5.0 每日輸入總表
+       ====================================== -->
+
+  <div id="input-sheet-overlay">
+
+    <div class="input-sheet-panel">
+
+      <div class="input-sheet-header">
+
+        <div class="input-sheet-title">
+          📝 每日輸入總表
+        </div>
+
+        <button
+          class="input-sheet-close"
+          onclick="closeInputSheet()"
+          title="關閉"
+        >
+          ×
+        </button>
+
+      </div>
+
+      <div class="input-sheet-note">
+        先填完需要異動的桶槽，再按「確認本次更新」。沒有修改的欄位不會寫入資料庫。
+      </div>
+
+      <div class="input-sheet-table-wrap">
+
+        <table class="input-sheet-table">
+
+          <thead>
+            <tr>
+              <th>桶槽</th>
+              <th>品名</th>
+              <th>上限</th>
+              <th>目前液位</th>
+              <th>新液位</th>
+              <th>今日廠商</th>
+              <th>新增廠商</th>
+            </tr>
+          </thead>
+
+          <tbody id="input-sheet-body">
+          </tbody>
+
+        </table>
+
+      </div>
+
+      <div class="input-sheet-footer">
+
+        <button
+          class="sheet-cancel-btn"
+          onclick="closeInputSheet()"
+        >
+          取消
+        </button>
+
+        <button
+          id="input-sheet-submit"
+          class="sheet-submit-btn"
+          onclick="submitInputSheet()"
+        >
+          ✅ 確認本次更新
+        </button>
 
       </div>
 
@@ -2071,6 +2390,22 @@
             data.timeStr || "",
             true
           );
+
+
+          const sheetCurrent =
+            document.getElementById(
+              `sheet_current_${data.tankNo}`
+            );
+
+          if (
+            sheetCurrent
+          ) {
+
+            sheetCurrent.textContent =
+              String(
+                data.level
+              );
+          }
         }
       );
 
@@ -2128,6 +2463,16 @@
               record.tankNo
             ]
           );
+
+
+          renderSheetCurrentVendors(
+            record.tankNo
+          );
+
+
+          renderSheetCurrentVendors(
+            record.tankNo
+          );
         }
       );
 
@@ -2169,6 +2514,77 @@
             tankVendorsData[
               record.tankNo
             ]
+          );
+        }
+      );
+
+
+      socket.on(
+        'batch_update_result',
+        result => {
+
+          inputSheetSubmitting =
+            false;
+
+
+          const submitButton =
+            document.getElementById(
+              'input-sheet-submit'
+            );
+
+
+          if (
+            submitButton
+          ) {
+
+            submitButton.disabled =
+              false;
+
+            submitButton.textContent =
+              '✅ 確認本次更新';
+          }
+
+
+          if (
+            !result ||
+            result.success !== true
+          ) {
+
+            alert(
+              `⚠️ ${
+                result?.message ||
+                '總表更新失敗'
+              }`
+            );
+
+            return;
+          }
+
+
+          const message =
+            `✅ 總表更新完成\n` +
+            `液位：${result.levelCount || 0} 筆\n` +
+            `新增廠商：${result.vendorAddCount || 0} 筆\n` +
+            `移除廠商：${result.vendorRemoveCount || 0} 筆`;
+
+
+          alert(
+            message
+          );
+
+
+          stagedVendorAdds = {};
+          stagedVendorRemoves =
+            new Set();
+
+
+          setTimeout(
+            () => {
+
+              buildInputSheet();
+
+            },
+            150
           );
         }
       );
@@ -2622,7 +3038,10 @@
 
           tankVendorsData[
             tank.tankNo
-          ] = [];
+          ] =
+            tankVendorsData[
+              tank.tankNo
+            ] || [];
 
 
           const category =
@@ -2644,10 +3063,6 @@
             category;
 
 
-          // -----------------------------
-          // 桶號
-          // -----------------------------
-
           const tankNoEl =
             document.createElement(
               'div'
@@ -2660,10 +3075,6 @@
             tank.tankNo;
 
 
-          // -----------------------------
-          // 品名
-          // -----------------------------
-
           const productEl =
             document.createElement(
               'div'
@@ -2675,10 +3086,6 @@
           productEl.textContent =
             tank.product;
 
-
-          // -----------------------------
-          // 桶槽圖
-          // -----------------------------
 
           const tankWrapper =
             document.createElement(
@@ -2725,10 +3132,6 @@
           );
 
 
-          // -----------------------------
-          // 液位資訊
-          // -----------------------------
-
           const infoEl =
             document.createElement(
               'div'
@@ -2744,10 +3147,6 @@
             `目前: 0 / 上限: ${tank.maxLevel} (0.0%)`;
 
 
-          // -----------------------------
-          // 廠商區
-          // -----------------------------
-
           const vendorSection =
             document.createElement(
               'div'
@@ -2757,92 +3156,19 @@
             'vendor-section';
 
 
-          const vendorInputGroup =
+          const vendorTitle =
             document.createElement(
               'div'
             );
 
-          vendorInputGroup.className =
-            'vendor-input-group';
+          vendorTitle.style.fontWeight =
+            '900';
 
+          vendorTitle.style.marginBottom =
+            '7px';
 
-          const vendorSelect =
-            document.createElement(
-              'select'
-            );
-
-          vendorSelect.id =
-            `vendor_select_${tank.tankNo}`;
-
-
-          const defaultOption =
-            document.createElement(
-              'option'
-            );
-
-          defaultOption.value =
-            '';
-
-          defaultOption.disabled =
-            true;
-
-          defaultOption.selected =
-            true;
-
-          defaultOption.textContent =
-            '+ 選擇進貨廠商';
-
-
-          vendorSelect.appendChild(
-            defaultOption
-          );
-
-
-          vendorList.forEach(
-            vendorName => {
-
-              const option =
-                document.createElement(
-                  'option'
-                );
-
-              option.value =
-                vendorName;
-
-              option.textContent =
-                vendorName;
-
-              vendorSelect.appendChild(
-                option
-              );
-            }
-          );
-
-
-          const addButton =
-            document.createElement(
-              'button'
-            );
-
-          addButton.textContent =
-            '加入';
-
-          addButton.onclick =
-            () => {
-
-              addVendor(
-                tank.tankNo
-              );
-            };
-
-
-          vendorInputGroup.appendChild(
-            vendorSelect
-          );
-
-          vendorInputGroup.appendChild(
-            addButton
-          );
+          vendorTitle.textContent =
+            '今日廠商';
 
 
           const tagsEl =
@@ -2875,17 +3201,13 @@
 
 
           vendorSection.appendChild(
-            vendorInputGroup
+            vendorTitle
           );
 
           vendorSection.appendChild(
             tagsEl
           );
 
-
-          // -----------------------------
-          // 更新時間
-          // -----------------------------
 
           const timeEl =
             document.createElement(
@@ -2902,69 +3224,17 @@
             '更新時間: 尚未設定';
 
 
-          // -----------------------------
-          // 液位輸入
-          // -----------------------------
-
-          const controls =
+          const readonlyNote =
             document.createElement(
               'div'
             );
 
-          controls.className =
-            'card-controls';
+          readonlyNote.className =
+            'readonly-note';
 
+          readonlyNote.textContent =
+            '🔒 本頁僅供監控；資料請至「📝 輸入總表」修改';
 
-          const levelInput =
-            document.createElement(
-              'input'
-            );
-
-          levelInput.id =
-            `input_${tank.tankNo}`;
-
-          levelInput.type =
-            'number';
-
-          levelInput.min =
-            '0';
-
-          levelInput.placeholder =
-            '輸入液位';
-
-
-          const updateButton =
-            document.createElement(
-              'button'
-            );
-
-          updateButton.className =
-            'update-btn';
-
-          updateButton.textContent =
-            '確認更新';
-
-          updateButton.onclick =
-            () => {
-
-              confirmTankLevel(
-                tank.tankNo
-              );
-            };
-
-
-          controls.appendChild(
-            levelInput
-          );
-
-          controls.appendChild(
-            updateButton
-          );
-
-
-          // -----------------------------
-          // 組合卡片
-          // -----------------------------
 
           card.appendChild(
             tankNoEl
@@ -2991,7 +3261,7 @@
           );
 
           card.appendChild(
-            controls
+            readonlyNote
           );
 
 
@@ -3408,8 +3678,29 @@
       }
 
 
+      const counts = {};
+
+
       vendors.forEach(
         record => {
+
+          const name =
+            record.vendorName || '';
+
+          if (!name) {
+            return;
+          }
+
+          counts[name] =
+            (counts[name] || 0) + 1;
+        }
+      );
+
+
+      Object.entries(
+        counts
+      ).forEach(
+        ([name, count]) => {
 
           const chip =
             document.createElement(
@@ -3421,48 +3712,10 @@
             'vendor-chip';
 
 
-          const text =
-            document.createElement(
-              'span'
-            );
-
-
-          text.textContent =
-            record.vendorName || '';
-
-
-          const remove =
-            document.createElement(
-              'span'
-            );
-
-
-          remove.className =
-            'remove-btn';
-
-
-          remove.textContent =
-            '✖';
-
-
-          remove.onclick =
-            () => {
-
-              removeVendor(
-                tankNo,
-                record.id
-              );
-            };
-
-
-          chip.appendChild(
-            text
-          );
-
-
-          chip.appendChild(
-            remove
-          );
+          chip.textContent =
+            count > 1
+              ? `${name} ×${count}`
+              : name;
 
 
           container.appendChild(
@@ -3659,6 +3912,868 @@
       );
     }
 
+
+
+    // ==========================================
+    // v1.5.0 每日輸入總表
+    // ==========================================
+
+    let stagedVendorAdds = {};
+    let stagedVendorRemoves = new Set();
+    let inputSheetSubmitting = false;
+
+
+    function openInputSheet() {
+
+      stagedVendorAdds = {};
+      stagedVendorRemoves =
+        new Set();
+
+      buildInputSheet();
+
+
+      document
+        .getElementById(
+          'input-sheet-overlay'
+        )
+        .style
+        .display =
+        'block';
+    }
+
+
+    function closeInputSheet() {
+
+      if (
+        inputSheetSubmitting
+      ) {
+        return;
+      }
+
+
+      document
+        .getElementById(
+          'input-sheet-overlay'
+        )
+        .style
+        .display =
+        'none';
+    }
+
+
+    function buildInputSheet() {
+
+      const body =
+        document.getElementById(
+          'input-sheet-body'
+        );
+
+
+      body.innerHTML =
+        '';
+
+
+      tankConfig.forEach(
+        tank => {
+
+          const row =
+            document.createElement(
+              'tr'
+            );
+
+
+          const tankNoCell =
+            document.createElement(
+              'td'
+            );
+
+          tankNoCell.textContent =
+            tank.tankNo;
+
+          tankNoCell.style.fontWeight =
+            '900';
+
+
+          const productCell =
+            document.createElement(
+              'td'
+            );
+
+          productCell.textContent =
+            tank.product;
+
+
+          const maxCell =
+            document.createElement(
+              'td'
+            );
+
+          maxCell.textContent =
+            String(
+              tank.maxLevel
+            );
+
+
+          const currentCell =
+            document.createElement(
+              'td'
+            );
+
+          currentCell.id =
+            `sheet_current_${tank.tankNo}`;
+
+          currentCell.textContent =
+            String(
+              tank.currentLevel ?? 0
+            );
+
+          currentCell.style.fontWeight =
+            '900';
+
+
+          const inputCell =
+            document.createElement(
+              'td'
+            );
+
+
+          const input =
+            document.createElement(
+              'input'
+            );
+
+          input.id =
+            `sheet_level_${tank.tankNo}`;
+
+          input.className =
+            'sheet-level-input';
+
+          input.type =
+            'number';
+
+          input.min =
+            '0';
+
+          input.step =
+            'any';
+
+          input.placeholder =
+            '不修改可空白';
+
+
+          inputCell.appendChild(
+            input
+          );
+
+
+          const currentVendorCell =
+            document.createElement(
+              'td'
+            );
+
+
+          const currentWrap =
+            document.createElement(
+              'div'
+            );
+
+          currentWrap.id =
+            `sheet_current_vendors_${tank.tankNo}`;
+
+          currentWrap.className =
+            'sheet-current-vendors';
+
+
+          currentVendorCell.appendChild(
+            currentWrap
+          );
+
+
+          const addVendorCell =
+            document.createElement(
+              'td'
+            );
+
+
+          const select =
+            document.createElement(
+              'select'
+            );
+
+          select.id =
+            `sheet_vendor_${tank.tankNo}`;
+
+          select.className =
+            'sheet-vendor-select';
+
+
+          const defaultOption =
+            document.createElement(
+              'option'
+            );
+
+          defaultOption.value =
+            '';
+
+          defaultOption.textContent =
+            '選擇廠商';
+
+          select.appendChild(
+            defaultOption
+          );
+
+
+          vendorList.forEach(
+            vendorName => {
+
+              const option =
+                document.createElement(
+                  'option'
+                );
+
+              option.value =
+                vendorName;
+
+              option.textContent =
+                vendorName;
+
+              select.appendChild(
+                option
+              );
+            }
+          );
+
+
+          const stageBtn =
+            document.createElement(
+              'button'
+            );
+
+          stageBtn.className =
+            'sheet-stage-btn';
+
+          stageBtn.textContent =
+            '＋加入';
+
+
+          stageBtn.onclick =
+            () => {
+
+              stageVendorAdd(
+                tank.tankNo
+              );
+            };
+
+
+          const stagedWrap =
+            document.createElement(
+              'div'
+            );
+
+          stagedWrap.id =
+            `sheet_staged_vendors_${tank.tankNo}`;
+
+          stagedWrap.className =
+            'sheet-staged-vendors';
+
+          stagedWrap.style.marginTop =
+            '7px';
+
+
+          addVendorCell.appendChild(
+            select
+          );
+
+          addVendorCell.appendChild(
+            stageBtn
+          );
+
+          addVendorCell.appendChild(
+            stagedWrap
+          );
+
+
+          row.appendChild(
+            tankNoCell
+          );
+
+          row.appendChild(
+            productCell
+          );
+
+          row.appendChild(
+            maxCell
+          );
+
+          row.appendChild(
+            currentCell
+          );
+
+          row.appendChild(
+            inputCell
+          );
+
+          row.appendChild(
+            currentVendorCell
+          );
+
+          row.appendChild(
+            addVendorCell
+          );
+
+
+          body.appendChild(
+            row
+          );
+
+
+          renderSheetCurrentVendors(
+            tank.tankNo
+          );
+
+          renderSheetStagedVendors(
+            tank.tankNo
+          );
+        }
+      );
+    }
+
+
+    function renderSheetCurrentVendors(
+      tankNo
+    ) {
+
+      const wrap =
+        document.getElementById(
+          `sheet_current_vendors_${tankNo}`
+        );
+
+
+      if (!wrap) {
+        return;
+      }
+
+
+      wrap.innerHTML =
+        '';
+
+
+      const records =
+        tankVendorsData[
+          tankNo
+        ] || [];
+
+
+      if (
+        records.length === 0
+      ) {
+
+        const empty =
+          document.createElement(
+            'span'
+          );
+
+        empty.textContent =
+          '—';
+
+        empty.style.color =
+          '#999';
+
+        wrap.appendChild(
+          empty
+        );
+
+        return;
+      }
+
+
+      records.forEach(
+        record => {
+
+          const tag =
+            document.createElement(
+              'span'
+            );
+
+          tag.className =
+            'sheet-vendor-tag';
+
+
+          if (
+            stagedVendorRemoves.has(
+              Number(
+                record.id
+              )
+            )
+          ) {
+
+            tag.classList.add(
+              'removed'
+            );
+          }
+
+
+          const text =
+            document.createElement(
+              'span'
+            );
+
+          text.textContent =
+            record.vendorName || '';
+
+
+          const remove =
+            document.createElement(
+              'button'
+            );
+
+          remove.className =
+            'sheet-tag-remove';
+
+          remove.type =
+            'button';
+
+          remove.textContent =
+            stagedVendorRemoves.has(
+              Number(
+                record.id
+              )
+            )
+              ? '↩'
+              : '×';
+
+          remove.title =
+            stagedVendorRemoves.has(
+              Number(
+                record.id
+              )
+            )
+              ? '取消移除'
+              : '本次更新時移除';
+
+
+          remove.onclick =
+            () => {
+
+              toggleStagedVendorRemove(
+                tankNo,
+                record.id
+              );
+            };
+
+
+          tag.appendChild(
+            text
+          );
+
+          tag.appendChild(
+            remove
+          );
+
+          wrap.appendChild(
+            tag
+          );
+        }
+      );
+    }
+
+
+    function stageVendorAdd(
+      tankNo
+    ) {
+
+      const select =
+        document.getElementById(
+          `sheet_vendor_${tankNo}`
+        );
+
+
+      if (
+        !select ||
+        !select.value
+      ) {
+
+        alert(
+          '請先選擇廠商'
+        );
+
+        return;
+      }
+
+
+      if (
+        !Array.isArray(
+          stagedVendorAdds[
+            tankNo
+          ]
+        )
+      ) {
+
+        stagedVendorAdds[
+          tankNo
+        ] = [];
+      }
+
+
+      // 不去重，故意允許同一廠商同日多筆。
+      stagedVendorAdds[
+        tankNo
+      ].push(
+        select.value
+      );
+
+
+      select.value =
+        '';
+
+
+      renderSheetStagedVendors(
+        tankNo
+      );
+    }
+
+
+    function renderSheetStagedVendors(
+      tankNo
+    ) {
+
+      const wrap =
+        document.getElementById(
+          `sheet_staged_vendors_${tankNo}`
+        );
+
+
+      if (!wrap) {
+        return;
+      }
+
+
+      wrap.innerHTML =
+        '';
+
+
+      const names =
+        stagedVendorAdds[
+          tankNo
+        ] || [];
+
+
+      names.forEach(
+        (vendorName, index) => {
+
+          const tag =
+            document.createElement(
+              'span'
+            );
+
+          tag.className =
+            'sheet-vendor-tag staged';
+
+
+          const text =
+            document.createElement(
+              'span'
+            );
+
+          text.textContent =
+            `＋${vendorName}`;
+
+
+          const remove =
+            document.createElement(
+              'button'
+            );
+
+          remove.className =
+            'sheet-tag-remove';
+
+          remove.type =
+            'button';
+
+          remove.textContent =
+            '×';
+
+          remove.title =
+            '取消本次新增';
+
+
+          remove.onclick =
+            () => {
+
+              stagedVendorAdds[
+                tankNo
+              ].splice(
+                index,
+                1
+              );
+
+
+              renderSheetStagedVendors(
+                tankNo
+              );
+            };
+
+
+          tag.appendChild(
+            text
+          );
+
+          tag.appendChild(
+            remove
+          );
+
+          wrap.appendChild(
+            tag
+          );
+        }
+      );
+    }
+
+
+    function toggleStagedVendorRemove(
+      tankNo,
+      recordId
+    ) {
+
+      const id =
+        Number(
+          recordId
+        );
+
+
+      if (
+        !Number.isInteger(id)
+      ) {
+
+        alert(
+          '此筆廠商紀錄無有效 ID，請重新整理頁面'
+        );
+
+        return;
+      }
+
+
+      if (
+        stagedVendorRemoves.has(id)
+      ) {
+
+        stagedVendorRemoves.delete(
+          id
+        );
+
+      } else {
+
+        stagedVendorRemoves.add(
+          id
+        );
+      }
+
+
+      renderSheetCurrentVendors(
+        tankNo
+      );
+    }
+
+
+    function collectInputSheetChanges() {
+
+      const levelChanges = [];
+      const vendorAdds = [];
+      const vendorRemoves = [];
+
+
+      for (
+        const tank of tankConfig
+      ) {
+
+        const input =
+          document.getElementById(
+            `sheet_level_${tank.tankNo}`
+          );
+
+
+        const raw =
+          input
+            ? input.value.trim()
+            : '';
+
+
+        if (
+          raw !== ''
+        ) {
+
+          const value =
+            Number(
+              raw
+            );
+
+
+          if (
+            !Number.isFinite(value) ||
+            value < 0
+          ) {
+
+            throw new Error(
+              `${tank.tankNo} 的新液位不正確`
+            );
+          }
+
+
+          if (
+            value !==
+            Number(
+              tank.currentLevel
+            )
+          ) {
+
+            levelChanges.push({
+              tankNo:
+                tank.tankNo,
+              level:
+                value
+            });
+          }
+        }
+
+
+        const names =
+          stagedVendorAdds[
+            tank.tankNo
+          ] || [];
+
+
+        names.forEach(
+          vendorName => {
+
+            vendorAdds.push({
+              tankNo:
+                tank.tankNo,
+              vendorName:
+                vendorName
+            });
+          }
+        );
+      }
+
+
+      stagedVendorRemoves.forEach(
+        recordId => {
+
+          vendorRemoves.push({
+            recordId:
+              Number(
+                recordId
+              )
+          });
+        }
+      );
+
+
+      return {
+        levelChanges,
+        vendorAdds,
+        vendorRemoves
+      };
+    }
+
+
+    function submitInputSheet() {
+
+      if (
+        !socket ||
+        !socket.connected
+      ) {
+
+        alert(
+          '⚠️ 目前未連線，無法送出總表'
+        );
+
+        return;
+      }
+
+
+      let changes;
+
+
+      try {
+
+        changes =
+          collectInputSheetChanges();
+
+      } catch (error) {
+
+        alert(
+          error.message
+        );
+
+        return;
+      }
+
+
+      const levelCount =
+        changes.levelChanges.length;
+
+      const addCount =
+        changes.vendorAdds.length;
+
+      const removeCount =
+        changes.vendorRemoves.length;
+
+
+      if (
+        levelCount === 0 &&
+        addCount === 0 &&
+        removeCount === 0
+      ) {
+
+        alert(
+          '目前沒有任何異動'
+        );
+
+        return;
+      }
+
+
+      const lines = [
+        `液位修改：${levelCount} 個桶槽`,
+        `新增廠商：${addCount} 筆`,
+        `移除廠商：${removeCount} 筆`,
+        '',
+        '確定送出本次更新嗎？'
+      ];
+
+
+      if (
+        !confirm(
+          lines.join('\n')
+        )
+      ) {
+        return;
+      }
+
+
+      inputSheetSubmitting =
+        true;
+
+
+      const submitButton =
+        document.getElementById(
+          'input-sheet-submit'
+        );
+
+
+      submitButton.disabled =
+        true;
+
+      submitButton.textContent =
+        '⏳ 更新中...';
+
+
+      socket.emit(
+        'batch_update',
+        changes
+      );
+    }
 
 
     // ==========================================
@@ -5724,6 +6839,53 @@
     // ==========================================
 
     restoreLogin();
+
+
+    document
+      .getElementById(
+        'input-sheet-overlay'
+      )
+      .addEventListener(
+        'click',
+        event => {
+
+          if (
+            event.target.id ===
+            'input-sheet-overlay'
+          ) {
+
+            closeInputSheet();
+          }
+        }
+      );
+
+
+    document.addEventListener(
+      'keydown',
+      event => {
+
+        if (
+          event.key ===
+          'Escape'
+        ) {
+
+          const overlay =
+            document.getElementById(
+              'input-sheet-overlay'
+            );
+
+
+          if (
+            overlay &&
+            overlay.style.display ===
+              'block'
+          ) {
+
+            closeInputSheet();
+          }
+        }
+      }
+    );
 
   </script>
 
