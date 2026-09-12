@@ -2,7 +2,11 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+  >
+
   <title>名泰化學 - 營運控制台 (即時同步版)</title>
 
   <style>
@@ -195,6 +199,11 @@
     .card-controls {
       margin-top: 5px;
       width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
     }
 
     .card-controls input {
@@ -212,6 +221,21 @@
 
     .card-controls input:focus {
       border-color: #3498db;
+    }
+
+    .update-btn {
+      padding: 9px 10px;
+      border: none;
+      border-radius: 6px;
+      background-color: #3498db;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .update-btn:hover {
+      background-color: #2980b9;
     }
 
     #login-overlay {
@@ -357,6 +381,16 @@
         padding: 6px 12px;
         font-size: 13px;
       }
+
+      .card-controls input {
+        width: 65px;
+        font-size: 16px;
+      }
+
+      .update-btn {
+        font-size: 12px;
+        padding: 8px;
+      }
     }
   </style>
 </head>
@@ -371,16 +405,21 @@
           <span style="font-size: 28px; color: #f39c12;">⬡</span>
           名泰化學材料
         </div>
+
         <div class="logo-sub">
           Ming Tai Chemical Materials Co., Ltd.
         </div>
       </div>
 
       <h3>登入</h3>
-      <p>請輸入員工編號登入營運控制台</p>
+
+      <p>
+        請輸入員工編號登入營運控制台
+      </p>
 
       <div class="login-input-group">
         <label>員工編號</label>
+
         <input
           type="text"
           id="username"
@@ -391,6 +430,7 @@
 
       <div class="login-input-group">
         <label>密碼</label>
+
         <input
           type="password"
           id="password"
@@ -413,27 +453,66 @@
     </div>
   </div>
 
-
-  <h2>名泰化學 - 桶槽即時監控</h2>
+  <h2>
+    名泰化學 - 桶槽即時監控
+  </h2>
 
   <div class="tabs-container">
-    <button class="tab-btn active" onclick="filterCategory('全部')">全部</button>
-    <button class="tab-btn" onclick="filterCategory('硫酸')">硫酸</button>
-    <button class="tab-btn" onclick="filterCategory('鹽酸')">鹽酸</button>
-    <button class="tab-btn" onclick="filterCategory('硝酸')">硝酸</button>
-    <button class="tab-btn" onclick="filterCategory('液鹼')">液鹼</button>
-    <button class="tab-btn" onclick="filterCategory('其它')">其它</button>
+
+    <button
+      class="tab-btn active"
+      onclick="filterCategory('全部')"
+    >
+      全部
+    </button>
+
+    <button
+      class="tab-btn"
+      onclick="filterCategory('硫酸')"
+    >
+      硫酸
+    </button>
+
+    <button
+      class="tab-btn"
+      onclick="filterCategory('鹽酸')"
+    >
+      鹽酸
+    </button>
+
+    <button
+      class="tab-btn"
+      onclick="filterCategory('硝酸')"
+    >
+      硝酸
+    </button>
+
+    <button
+      class="tab-btn"
+      onclick="filterCategory('液鹼')"
+    >
+      液鹼
+    </button>
+
+    <button
+      class="tab-btn"
+      onclick="filterCategory('其它')"
+    >
+      其它
+    </button>
+
   </div>
 
-  <div id="dashboard" class="grid-container"></div>
-
+  <div
+    id="dashboard"
+    class="grid-container"
+  ></div>
 
   <script src="/socket.io/socket.io.js"></script>
 
   <script>
 
     let socket = null;
-
 
     const vendorList = [
       "台塑食",
@@ -451,7 +530,6 @@
       "元成",
       "其他"
     ];
-
 
     const tankConfig = [
 
@@ -484,17 +562,21 @@
 
     ];
 
-
     let tankVendorsData = {};
 
-    const dashboard = document.getElementById("dashboard");
+    const dashboard =
+      document.getElementById("dashboard");
 
     const vendorOptionsHTML =
       vendorList
-        .map(vendor => `<option value="${vendor}">${vendor}</option>`)
+        .map(
+          vendor =>
+            `<option value="${vendor}">${vendor}</option>`
+        )
         .join("");
 
-    let currentDay = new Date().getDate();
+    let currentDay =
+      new Date().getDate();
 
 
     // ==========================================
@@ -504,13 +586,19 @@
     async function checkLogin() {
 
       const user =
-        document.getElementById('username').value.trim();
+        document
+          .getElementById('username')
+          .value
+          .trim();
 
       const pass =
-        document.getElementById('password').value;
+        document
+          .getElementById('password')
+          .value;
 
       const errorMsg =
-        document.getElementById('login-error');
+        document
+          .getElementById('login-error');
 
 
       if (!user || !pass) {
@@ -518,31 +606,38 @@
         errorMsg.textContent =
           '⚠️ 請輸入員工編號與密碼';
 
-        errorMsg.style.display = 'block';
+        errorMsg.style.display =
+          'block';
 
         return;
+
       }
 
 
       try {
 
-        const response = await fetch('/api/login', {
+        const response =
+          await fetch(
+            '/api/login',
+            {
+              method: 'POST',
 
-          method: 'POST',
+              headers: {
+                'Content-Type':
+                  'application/json'
+              },
 
-          headers: {
-            'Content-Type': 'application/json'
-          },
-
-          body: JSON.stringify({
-            username: user,
-            password: pass
-          })
-
-        });
+              body:
+                JSON.stringify({
+                  username: user,
+                  password: pass
+                })
+            }
+          );
 
 
-        const result = await response.json();
+        const result =
+          await response.json();
 
 
         if (
@@ -556,23 +651,28 @@
             result.token
           );
 
+          errorMsg.style.display =
+            'none';
 
-          errorMsg.style.display = 'none';
+          document
+            .getElementById(
+              'login-overlay'
+            )
+            .style
+            .display =
+            'none';
 
-
-          document.getElementById(
-            'login-overlay'
-          ).style.display = 'none';
-
-
-          connectSocket(result.token);
+          connectSocket(
+            result.token
+          );
 
         } else {
 
           errorMsg.textContent =
             '⚠️ 帳號或密碼錯誤，請重新輸入！';
 
-          errorMsg.style.display = 'block';
+          errorMsg.style.display =
+            'block';
 
         }
 
@@ -584,7 +684,8 @@
         errorMsg.textContent =
           '⚠️ 無法連線至伺服器，請稍後再試！';
 
-        errorMsg.style.display = 'block';
+        errorMsg.style.display =
+          'block';
 
       }
 
@@ -594,11 +695,54 @@
     function handleEnter(e) {
 
       if (e.key === 'Enter') {
+
         checkLogin();
+
       }
 
     }
 
+
+    // ==========================================
+    // 重新整理後恢復登入
+    // ==========================================
+
+    function restoreLogin() {
+
+      const token =
+        sessionStorage.getItem(
+          'tank_token'
+        );
+
+      if (!token) {
+
+        document
+          .getElementById(
+            'login-overlay'
+          )
+          .style
+          .display =
+          'flex';
+
+        return;
+
+      }
+
+
+      document
+        .getElementById(
+          'login-overlay'
+        )
+        .style
+        .display =
+        'none';
+
+
+      connectSocket(
+        token
+      );
+
+    }
 
 
     // ==========================================
@@ -623,13 +767,16 @@
       });
 
 
-      socket.on('connect', () => {
+      socket.on(
+        'connect',
+        () => {
 
-        console.log(
-          '✅ 即時同步伺服器連線成功'
-        );
+          console.log(
+            '✅ 即時同步伺服器連線成功'
+          );
 
-      });
+        }
+      );
 
 
       socket.on(
@@ -651,15 +798,21 @@
               'tank_token'
             );
 
-            document.getElementById(
-              'login-overlay'
-            ).style.display = 'flex';
+
+            document
+              .getElementById(
+                'login-overlay'
+              )
+              .style
+              .display =
+              'flex';
 
 
             const errorMsg =
-              document.getElementById(
-                'login-error'
-              );
+              document
+                .getElementById(
+                  'login-error'
+                );
 
 
             errorMsg.textContent =
@@ -679,7 +832,10 @@
         'init_data',
         (serverState) => {
 
-          for (let tNo in serverState) {
+          for (
+            let tNo
+            in serverState
+          ) {
 
             const data =
               serverState[tNo];
@@ -729,26 +885,43 @@
     }
 
 
-
     // ==========================================
     // 桶槽分類
     // ==========================================
 
-    function getCategory(productName) {
+    function getCategory(
+      productName
+    ) {
 
-      if (productName.includes("硫酸")) {
+      if (
+        productName.includes(
+          "硫酸"
+        )
+      ) {
         return "硫酸";
       }
 
-      if (productName.includes("鹽酸")) {
+      if (
+        productName.includes(
+          "鹽酸"
+        )
+      ) {
         return "鹽酸";
       }
 
-      if (productName.includes("硝酸")) {
+      if (
+        productName.includes(
+          "硝酸"
+        )
+      ) {
         return "硝酸";
       }
 
-      if (productName.includes("液鹼")) {
+      if (
+        productName.includes(
+          "液鹼"
+        )
+      ) {
         return "液鹼";
       }
 
@@ -757,151 +930,153 @@
     }
 
 
-
     // ==========================================
     // 建立 Dashboard
     // ==========================================
 
     function initDashboard() {
 
-      dashboard.innerHTML = "";
+      dashboard.innerHTML =
+        "";
 
 
-      tankConfig.forEach(tank => {
+      tankConfig.forEach(
+        tank => {
 
-        tankVendorsData[tank.tankNo] = [];
-
-
-        const category =
-          getCategory(tank.product);
-
-
-        const cardHTML = `
-
-          <div
-            class="tank-card"
-            data-category="${category}"
-          >
-
-            <div class="tank-no">
-              ${tank.tankNo}
-            </div>
+          tankVendorsData[
+            tank.tankNo
+          ] = [];
 
 
-            <div class="product-name">
-              ${tank.product}
-            </div>
+          const category =
+            getCategory(
+              tank.product
+            );
 
 
-            <div class="tank-wrapper">
+          const cardHTML = `
 
-              <div class="tank-style">
+            <div
+              class="tank-card"
+              data-category="${category}"
+            >
 
-                <div
-                  id="liquid_${tank.tankNo}"
-                  class="liquid-style"
-                  style="
-                    height:0%;
-                    background-color:#3498db;
-                  "
-                ></div>
+              <div class="tank-no">
+                ${tank.tankNo}
+              </div>
+
+              <div class="product-name">
+                ${tank.product}
+              </div>
+
+              <div class="tank-wrapper">
+
+                <div class="tank-style">
+
+                  <div
+                    id="liquid_${tank.tankNo}"
+                    class="liquid-style"
+                    style="
+                      height:0%;
+                      background-color:#3498db;
+                    "
+                  ></div>
+
+                </div>
 
               </div>
 
-            </div>
+              <div
+                id="info_${tank.tankNo}"
+                class="info-text"
+              >
+                目前: 0 /
+                上限: ${tank.maxLevel}
+                (0.0%)
+              </div>
 
+              <div class="vendor-section">
 
-            <div
-              id="info_${tank.tankNo}"
-              class="info-text"
-            >
-              目前: 0 /
-              上限: ${tank.maxLevel}
-              (0.0%)
-            </div>
+                <div class="vendor-input-group">
 
+                  <select
+                    id="vendor_select_${tank.tankNo}"
+                  >
 
-            <div class="vendor-section">
+                    <option
+                      value=""
+                      disabled
+                      selected
+                    >
+                      + 選擇進貨廠商
+                    </option>
 
-              <div class="vendor-input-group">
+                    ${vendorOptionsHTML}
 
-                <select
-                  id="vendor_select_${tank.tankNo}"
+                  </select>
+
+                  <button
+                    onclick="addVendor('${tank.tankNo}')"
+                  >
+                    加入
+                  </button>
+
+                </div>
+
+                <div
+                  id="tags_${tank.tankNo}"
+                  class="vendor-tags"
                 >
 
-                  <option
-                    value=""
-                    disabled
-                    selected
-                  >
-                    + 選擇進貨廠商
-                  </option>
+                  <span class="empty-vendor">
+                    目前無指定廠商
+                  </span>
 
-                  ${vendorOptionsHTML}
+                </div>
 
-                </select>
+              </div>
 
+              <div
+                id="time_${tank.tankNo}"
+                class="time-text"
+              >
+                更新時間: 尚未設定
+              </div>
+
+              <div class="card-controls">
+
+                <input
+                  id="input_${tank.tankNo}"
+                  type="number"
+                  value=""
+                  placeholder="輸入液位"
+                  min="0"
+                >
 
                 <button
-                  onclick="addVendor('${tank.tankNo}')"
+                  class="update-btn"
+                  onclick="
+                    confirmTankLevel(
+                      '${tank.tankNo}'
+                    )
+                  "
                 >
-                  加入
+                  確認更新
                 </button>
 
               </div>
 
-
-              <div
-                id="tags_${tank.tankNo}"
-                class="vendor-tags"
-              >
-
-                <span class="empty-vendor">
-                  目前無指定廠商
-                </span>
-
-              </div>
-
             </div>
+          `;
 
 
-            <div
-              id="time_${tank.tankNo}"
-              class="time-text"
-            >
-              更新時間: 尚未設定
-            </div>
+          dashboard.innerHTML +=
+            cardHTML;
 
-
-            <div class="card-controls">
-
-              <input
-                id="input_${tank.tankNo}"
-                type="number"
-                value=""
-                placeholder="輸入液位"
-                min="0"
-                oninput="
-                  handleInput(
-                    '${tank.tankNo}',
-                    this.value
-                  )
-                "
-              >
-
-            </div>
-
-          </div>
-        `;
-
-
-        dashboard.innerHTML +=
-          cardHTML;
-
-      });
+        }
+      );
 
     }
-
 
 
     // ==========================================
@@ -913,63 +1088,74 @@
     ) {
 
       document
-        .querySelectorAll('.tab-btn')
-        .forEach(btn => {
+        .querySelectorAll(
+          '.tab-btn'
+        )
+        .forEach(
+          btn => {
 
-          btn.classList.remove(
-            'active'
-          );
+            btn
+              .classList
+              .remove(
+                'active'
+              );
 
 
-          if (
-            btn.innerText ===
-            selectedCategory
-          ) {
+            if (
+              btn.innerText ===
+              selectedCategory
+            ) {
 
-            btn.classList.add(
-              'active'
-            );
+              btn
+                .classList
+                .add(
+                  'active'
+                );
+
+            }
 
           }
-
-        });
-
-
-      const allCards =
-        document.querySelectorAll(
-          '.tank-card'
         );
 
 
-      allCards.forEach(card => {
-
-        const cardCat =
-          card.getAttribute(
-            'data-category'
+      const allCards =
+        document
+          .querySelectorAll(
+            '.tank-card'
           );
 
 
-        if (
-          selectedCategory ===
-          '全部' ||
-          cardCat ===
-          selectedCategory
-        ) {
+      allCards.forEach(
+        card => {
 
-          card.style.display =
-            'flex';
+          const cardCat =
+            card
+              .getAttribute(
+                'data-category'
+              );
 
-        } else {
 
-          card.style.display =
-            'none';
+          if (
+            selectedCategory ===
+              '全部' ||
+            cardCat ===
+              selectedCategory
+          ) {
+
+            card.style.display =
+              'flex';
+
+          } else {
+
+            card.style.display =
+              'none';
+
+          }
 
         }
-
-      });
+      );
 
     }
-
 
 
     // ==========================================
@@ -986,25 +1172,38 @@
 
       const tank =
         tankConfig.find(
-          t => t.tankNo === tankNo
+          t =>
+            t.tankNo ===
+            tankNo
         );
 
 
       if (!tank) {
+
         return;
+
       }
 
 
-      if (!Array.isArray(newVendors)) {
+      if (
+        !Array.isArray(
+          newVendors
+        )
+      ) {
+
         newVendors = [];
+
       }
 
 
       tank.currentLevel =
-        Number(newLevel) || 0;
+        Number(newLevel) ||
+        0;
 
 
-      tankVendorsData[tankNo] =
+      tankVendorsData[
+        tankNo
+      ] =
         [...newVendors];
 
 
@@ -1023,9 +1222,12 @@
       }
 
 
-      if (displayLevel < 0) {
+      if (
+        displayLevel < 0
+      ) {
 
-        displayLevel = 0;
+        displayLevel =
+          0;
 
       }
 
@@ -1034,13 +1236,15 @@
         (
           displayLevel /
           tank.maxLevel
-        ) * 100;
+        ) *
+        100;
 
 
       const liquidEl =
-        document.getElementById(
-          `liquid_${tankNo}`
-        );
+        document
+          .getElementById(
+            `liquid_${tankNo}`
+          );
 
 
       if (liquidEl) {
@@ -1049,7 +1253,9 @@
           `${percentage}%`;
 
 
-        liquidEl.style.backgroundColor =
+        liquidEl
+          .style
+          .backgroundColor =
           percentage >= 85
             ? "#e74c3c"
             : "#3498db";
@@ -1058,9 +1264,10 @@
 
 
       const infoEl =
-        document.getElementById(
-          `info_${tankNo}`
-        );
+        document
+          .getElementById(
+            `info_${tankNo}`
+          );
 
 
       if (infoEl) {
@@ -1069,13 +1276,14 @@
           (
             tank.currentLevel /
             tank.maxLevel
-          ) * 100;
+          ) *
+          100;
 
 
         infoEl.innerHTML =
 
           tank.currentLevel >
-          tank.maxLevel
+            tank.maxLevel
 
           ? `目前:
              <span style="color:red;">
@@ -1103,9 +1311,10 @@
 
 
       const inputEl =
-        document.getElementById(
-          `input_${tankNo}`
-        );
+        document
+          .getElementById(
+            `input_${tankNo}`
+          );
 
 
       if (
@@ -1114,23 +1323,28 @@
       ) {
 
         inputEl.value =
-          tank.currentLevel === 0
-            ? ""
-            : tank.currentLevel;
+          tank.currentLevel ===
+            0
+          ? ""
+          : tank.currentLevel;
 
       }
 
 
       const tagsContainer =
-        document.getElementById(
-          `tags_${tankNo}`
-        );
+        document
+          .getElementById(
+            `tags_${tankNo}`
+          );
 
 
-      if (tagsContainer) {
+      if (
+        tagsContainer
+      ) {
 
         if (
-          newVendors.length === 0
+          newVendors.length ===
+          0
         ) {
 
           tagsContainer.innerHTML =
@@ -1176,12 +1390,15 @@
 
 
       const timeEl =
-        document.getElementById(
-          `time_${tankNo}`
-        );
+        document
+          .getElementById(
+            `time_${tankNo}`
+          );
 
 
-      if (timeEl) {
+      if (
+        timeEl
+      ) {
 
         timeEl.textContent =
           timeStr
@@ -1223,6 +1440,110 @@
     }
 
 
+    // ==========================================
+    // 液位確認更新
+    // ==========================================
+
+    function confirmTankLevel(
+      tankNo
+    ) {
+
+      const inputEl =
+        document
+          .getElementById(
+            `input_${tankNo}`
+          );
+
+
+      const inputValue =
+        inputEl
+          .value
+          .trim();
+
+
+      if (
+        inputValue === ""
+      ) {
+
+        alert(
+          "請輸入液位"
+        );
+
+        return;
+
+      }
+
+
+      const newValue =
+        parseFloat(
+          inputValue
+        );
+
+
+      if (
+        Number.isNaN(
+          newValue
+        ) ||
+        newValue < 0
+      ) {
+
+        alert(
+          "請輸入正確液位"
+        );
+
+        return;
+
+      }
+
+
+      const tank =
+        tankConfig.find(
+          t =>
+            t.tankNo ===
+            tankNo
+        );
+
+
+      if (!tank) {
+
+        return;
+
+      }
+
+
+      const confirmResult =
+        confirm(
+          `確定將 ${tankNo} 液位更新為 ${newValue} 嗎？`
+        );
+
+
+      if (
+        !confirmResult
+      ) {
+
+        return;
+
+      }
+
+
+      applyChange(
+
+        tankNo,
+
+        newValue,
+
+        tankVendorsData[
+          tankNo
+        ],
+
+        getNowString(),
+
+        false
+
+      );
+
+    }
+
 
     // ==========================================
     // 時間
@@ -1240,11 +1561,17 @@
 
         `${String(
           now.getMonth() + 1
-        ).padStart(2,'0')}/` +
+        ).padStart(
+          2,
+          '0'
+        )}/` +
 
         `${String(
           now.getDate()
-        ).padStart(2,'0')} ` +
+        ).padStart(
+          2,
+          '0'
+        )} ` +
 
         now.toLocaleTimeString(
           'zh-TW',
@@ -1258,21 +1585,27 @@
     }
 
 
-
     // ==========================================
     // 廠商
     // ==========================================
 
-    function addVendor(tankNo) {
+    function addVendor(
+      tankNo
+    ) {
 
       const selectEl =
-        document.getElementById(
-          `vendor_select_${tankNo}`
-        );
+        document
+          .getElementById(
+            `vendor_select_${tankNo}`
+          );
 
 
-      if (!selectEl.value) {
+      if (
+        !selectEl.value
+      ) {
+
         return;
+
       }
 
 
@@ -1304,10 +1637,10 @@
       );
 
 
-      selectEl.value = "";
+      selectEl.value =
+        "";
 
     }
-
 
 
     function removeVendor(
@@ -1346,54 +1679,6 @@
     }
 
 
-
-    // ==========================================
-    // 液位輸入
-    // ==========================================
-
-    function handleInput(
-      tankNo,
-      inputValue
-    ) {
-
-      const newValue =
-        inputValue === ""
-
-        ? 0
-
-        : parseFloat(
-            inputValue
-          );
-
-
-      const timeStr =
-        inputValue === ""
-
-        ? ""
-
-        : getNowString();
-
-
-      applyChange(
-
-        tankNo,
-
-        newValue,
-
-        tankVendorsData[
-          tankNo
-        ],
-
-        timeStr,
-
-        false
-
-      );
-
-    }
-
-
-
     // ==========================================
     // 換日
     // ==========================================
@@ -1401,7 +1686,8 @@
     function checkNewDay() {
 
       const nowDay =
-        new Date().getDate();
+        new Date()
+          .getDate();
 
 
       if (
@@ -1443,12 +1729,13 @@
     }
 
 
-
     // ==========================================
     // 啟動
     // ==========================================
 
     initDashboard();
+
+    restoreLogin();
 
     setInterval(
       checkNewDay,
