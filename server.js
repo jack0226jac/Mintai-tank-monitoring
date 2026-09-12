@@ -1,24 +1,18 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
+const jwt = require('jsonwebtoken');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// 讓 server 可以讀取 JSON
 app.use(express.json());
-
-// 網頁放在 public 資料夾
 app.use(express.static('public'));
 
 let globalState = {};
 
-// ===============================
-// 登入帳號
-// 密碼不寫在 HTML
-// 改從 Render Environment Variables 讀取
-// ===============================
+const JWT_SECRET = process.env.JWT_SECRET;
 
 const validAccounts = {
     "1001": process.env.PASSWORD_1001,
@@ -26,9 +20,9 @@ const validAccounts = {
     "1003": process.env.PASSWORD_1003
 };
 
-// ===============================
+// ========================================
 // 登入 API
-// ===============================
+// ========================================
 
 app.post('/api/login', (req, res) => {
 
@@ -39,10 +33,17 @@ app.post('/api/login', (req, res) => {
         validAccounts[username] === password
     ) {
 
-        return res.json({
-            success: true
-        });
+        // 登入成功後產生 8 小時有效的通行證
+        const token = jwt.sign(
+            { username: username },
+            JWT_SECRET,
+            { expiresIn: '8h' }
+        );
 
+        return res.json({
+            success: true,
+            token: token
+        });
     }
 
     return res.status(401).json({
@@ -50,13 +51,42 @@ app.post('/api/login', (req, res) => {
     });
 });
 
-// ===============================
+
+// ========================================
+// Socket.IO 登入驗證
+// ========================================
+
+io.use((socket, next) => {
+
+    const token = socket.handshake.auth.token;
+
+    if (!token) {
+        return next(new Error('未登入'));
+    }
+
+    try {
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+
+        socket.user = decoded;
+
+        next();
+
+    } catch (error) {
+
+        return next(new Error('登入已失效'));
+
+    }
+});
+
+
+// ========================================
 // Socket.IO
-// ===============================
+// ========================================
 
 io.on('connection', (socket) => {
 
-    console.log('有人連線');
+    console.log(`✅ ${socket.user.username} 已連線`);
 
     socket.emit('init_data', globalState);
 
@@ -64,24 +94,39 @@ io.on('connection', (socket) => {
 
         const { tankNo } = data;
 
+        if (!tankNo) {
+            return;
+        }
+
         globalState[tankNo] = data;
+
+        console.log(
+            `📝 ${socket.user.username} 修改 ${tankNo}`
+        );
 
         socket.broadcast.emit('sync_tank', data);
 
     });
 
     socket.on('disconnect', () => {
-        console.log('有人離線');
+
+        console.log(
+            `❌ ${socket.user.username} 已離線`
+        );
+
     });
 
 });
 
-// ===============================
+
+// ========================================
 // 啟動 Server
-// ===============================
+// ========================================
 
 const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, '0.0.0.0', () => {
+
     console.log(`🚀 雲端伺服器啟動！Port: ${PORT}`);
+
 });
