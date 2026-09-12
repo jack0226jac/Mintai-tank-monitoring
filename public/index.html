@@ -2,9 +2,11 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <title>20座桶槽監控系統 (全廠即時同步 + 跨日自動清除)</title>
+  <!-- 讓手機版顯示比例正常 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>名泰化學 - 營運控制台 (即時同步版)</title>
   <style>
-    body { font-family: Arial, sans-serif; background-color: #f4f6f9; padding: 20px; margin: 0; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9; padding: 20px; margin: 0; }
     h2 { text-align: center; color: #333; margin-bottom: 30px; }
     .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; max-width: 1500px; margin: 0 auto; }
     .tank-card { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); text-align: center; display: flex; flex-direction: column; align-items: center; position: relative; }
@@ -25,30 +27,113 @@
     .vendor-chip { background-color: #e8f8f5; color: #0e6655; border: 1px solid #1abc9c; padding: 4px 10px; border-radius: 14px; font-size: 14px; display: flex; align-items: center; gap: 6px; }
     .vendor-chip span.remove-btn { cursor: pointer; color: #e74c3c; font-weight: bold; font-size: 14px; margin-left: 2px; }
     .empty-vendor { font-size: 12px; color: #aaa; margin-top: 4px; }
-    
     .time-text { font-size: 12px; color: #95a5a6; margin-bottom: 10px; white-space: nowrap; }
     .card-controls { margin-top: 5px; width: 100%; }
     .card-controls input { width: 80px; padding: 8px; font-size: 18px; font-weight: bold; color: #2c3e50; border: 2px solid #bdc3c7; border-radius: 6px; text-align: center; outline: none; transition: border-color 0.3s; }
     .card-controls input:focus { border-color: #3498db; }
+
+    /* === 新增：企業級登入畫面樣式 === */
+    #login-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background-color: #f4f7f9; z-index: 9999;
+      display: flex; justify-content: center; align-items: center;
+    }
+    .login-card {
+      background: white; width: 90%; max-width: 380px;
+      padding: 40px 30px; border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+      border-top: 5px solid #1c8ebf;
+    }
+    .login-logo { text-align: center; margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 20px; }
+    .login-logo .logo-text { font-size: 24px; color: #005b8f; font-weight: bold; letter-spacing: 1px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .login-logo .logo-sub { font-size: 12px; color: #7f8c8d; margin-top: 5px; }
+    .login-card h3 { text-align: left; margin-bottom: 5px; font-size: 24px; color: #2c3e50; }
+    .login-card p { text-align: left; color: #7f8c8d; font-size: 14px; margin-bottom: 25px; }
+    .login-input-group { text-align: left; margin-bottom: 20px; }
+    .login-input-group label { display: block; font-size: 14px; color: #34495e; margin-bottom: 8px; font-weight: bold; }
+    .login-input-group input { 
+      width: 100%; padding: 12px 15px; border: 1px solid #dcdde1; border-radius: 6px; 
+      font-size: 16px; box-sizing: border-box; outline: none; transition: 0.3s;
+    }
+    .login-input-group input:focus { border-color: #1c8ebf; box-shadow: 0 0 5px rgba(28, 142, 191, 0.3); }
+    .login-btn {
+      width: 100%; background-color: #1c8ebf; color: white; border: none;
+      padding: 14px; border-radius: 6px; font-size: 16px; cursor: pointer; transition: 0.3s; font-weight: bold;
+    }
+    .login-btn:hover { background-color: #15739b; }
+    #login-error { color: #e74c3c; font-size: 13px; margin-bottom: 15px; display: none; text-align: center; font-weight: bold; }
   </style>
 </head>
 <body>
 
-  <h2>廠區桶槽即時監控</h2>
-  
+  <!-- === 新增：登入畫面防護罩 === -->
+  <div id="login-overlay">
+    <div class="login-card">
+      <div class="login-logo">
+        <div class="logo-text">
+          <span style="font-size: 28px; color: #f39c12;">⬡</span> 名泰化學材料
+        </div>
+        <div class="logo-sub">Ming Tai Chemical Materials Co., Ltd.</div>
+      </div>
+      
+      <h3>登入</h3>
+      <p>請輸入員工編號登入營運控制台</p>
+      
+      <div class="login-input-group">
+        <label>員工編號</label>
+        <input type="text" id="username" placeholder="👤 例: 1001" onkeypress="handleEnter(event)">
+      </div>
+      <div class="login-input-group">
+        <label>密碼</label>
+        <input type="password" id="password" placeholder="🔒 請輸入密碼" onkeypress="handleEnter(event)">
+      </div>
+      
+      <div id="login-error">⚠️ 帳號或密碼錯誤，請重新輸入！</div>
+      
+      <button class="login-btn" onclick="checkLogin()">登入 ➔</button>
+    </div>
+  </div>
+
+  <!-- 原本的主畫面 -->
+  <h2>名泰化學 - 桶槽即時監控</h2>
   <div id="dashboard" class="grid-container"></div>
 
   <!-- 載入 Socket.io 即時連線套件 -->
   <script src="/socket.io/socket.io.js"></script>
 
   <script>
-    // 建立與伺服器的連線
-    const socket = io();
+    // === 新增：登入驗證邏輯 ===
+    const validAccounts = {
+      "1001": "1111",
+      "1002": "2222",
+      "1003": "3333"
+    };
 
-    // 1. 你的專屬進貨廠商名單
+    function checkLogin() {
+      const user = document.getElementById('username').value;
+      const pass = document.getElementById('password').value;
+      const errorMsg = document.getElementById('login-error');
+
+      // 檢查帳號是否存在，且密碼是否正確
+      if (validAccounts[user] && validAccounts[user] === pass) {
+        document.getElementById('login-overlay').style.display = 'none'; // 解開防護罩
+        errorMsg.style.display = 'none';
+      } else {
+        errorMsg.style.display = 'block'; // 顯示錯誤訊息
+      }
+    }
+
+    // 支援按下 Enter 鍵直接登入
+    function handleEnter(e) {
+      if (e.key === 'Enter') {
+        checkLogin();
+      }
+    }
+
+    // --- 以下為原有的桶槽系統邏輯 ---
+    const socket = io();
     const vendorList = ["台塑食", "台塑工", "東南", "中華化學", "華夏", "台紙", "義芳", "合禮", "貝民", "西一", "進口", "晴揚", "元成","其他"];
 
-    // 2. 你的真實桶槽設定檔 (已完美修復標點符號)
     const tankConfig = [
       { tankNo: "TK-01", product: "液鹼 (45%)", maxLevel: 60, currentLevel: 0 },
       { tankNo: "TK-02", product: "液鹼 (45%)", maxLevel: 60, currentLevel: 0 },
@@ -76,46 +161,33 @@
     let tankVendorsData = {}; 
     const dashboard = document.getElementById("dashboard");
     const vendorOptionsHTML = vendorList.map(vendor => `<option value="${vendor}">${vendor}</option>`).join("");
-    
-    // 紀錄今天是幾號，用來做跨日清除判定
     let currentDay = new Date().getDate();
 
-    // 3. 畫出骨架
     function initDashboard() {
       dashboard.innerHTML = ""; 
-
       tankConfig.forEach(tank => {
         tankVendorsData[tank.tankNo] = [];
-
-        const liquidId = `liquid_${tank.tankNo}`;
-        const infoId = `info_${tank.tankNo}`;
-        const timeId = `time_${tank.tankNo}`;
-        const tagsId = `tags_${tank.tankNo}`;
-        const selectId = `vendor_select_${tank.tankNo}`;
-
         const cardHTML = `
           <div class="tank-card">
             <div class="tank-no">${tank.tankNo}</div>
             <div class="product-name">${tank.product}</div>
             <div class="tank-wrapper">
               <div class="tank-style">
-                <div id="${liquidId}" class="liquid-style" style="height: 0%; background-color: #3498db;"></div>
+                <div id="liquid_${tank.tankNo}" class="liquid-style" style="height: 0%; background-color: #3498db;"></div>
               </div>
             </div>
-            <div id="${infoId}" class="info-text">目前: 0 / 上限: ${tank.maxLevel} (0.0%)</div>
+            <div id="info_${tank.tankNo}" class="info-text">目前: 0 / 上限: ${tank.maxLevel} (0.0%)</div>
             <div class="vendor-section">
               <div class="vendor-input-group">
-                <select id="${selectId}">
+                <select id="vendor_select_${tank.tankNo}">
                   <option value="" disabled selected>+ 選擇進貨廠商</option>
                   ${vendorOptionsHTML}
                 </select>
                 <button onclick="addVendor('${tank.tankNo}')">加入</button>
               </div>
-              <div id="${tagsId}" class="vendor-tags">
-                <span class="empty-vendor">目前無指定廠商</span>
-              </div>
+              <div id="tags_${tank.tankNo}" class="vendor-tags"><span class="empty-vendor">目前無指定廠商</span></div>
             </div>
-            <div id="${timeId}" class="time-text">更新時間: 尚未設定</div>
+            <div id="time_${tank.tankNo}" class="time-text">更新時間: 尚未設定</div>
             <div class="card-controls">
               <input id="input_${tank.tankNo}" type="number" value="" placeholder="輸入液位" min="0" oninput="handleInput('${tank.tankNo}', this.value)">
             </div>
@@ -125,16 +197,13 @@
       });
     }
 
-    // 4. 核心功能：負責同步與更新畫面
     function applyChange(tankNo, newLevel, newVendors, timeStr, isFromRemote = false) {
       const tank = tankConfig.find(t => t.tankNo === tankNo);
       if (!tank) return;
 
-      // 更新本機陣列資料
       tank.currentLevel = newLevel;
       tankVendorsData[tankNo] = [...newVendors];
 
-      // 更新畫面液位
       let displayLevel = newLevel > tank.maxLevel ? tank.maxLevel : newLevel;
       if (displayLevel < 0) displayLevel = 0; 
       const percentage = (displayLevel / tank.maxLevel) * 100;
@@ -144,7 +213,6 @@
         liquidEl.style.backgroundColor = percentage >= 85 ? "#e74c3c" : "#3498db";
       }
 
-      // 更新文字
       const infoEl = document.getElementById(`info_${tankNo}`);
       if (infoEl) {
         const actualPercentage = (newLevel / tank.maxLevel) * 100;
@@ -153,13 +221,11 @@
           : `目前: ${newLevel} / 上限: ${tank.maxLevel} (${actualPercentage.toFixed(1)}%)`;
       }
 
-      // 遠端同步時，更新輸入框的值
       const inputEl = document.getElementById(`input_${tankNo}`);
       if (inputEl && isFromRemote) {
         inputEl.value = newLevel === 0 ? "" : newLevel;
       }
 
-      // 畫出純淨版標籤
       const tagsContainer = document.getElementById(`tags_${tankNo}`);
       if (tagsContainer) {
         if (newVendors.length === 0) {
@@ -174,24 +240,16 @@
         }
       }
 
-      // 更新時間標籤
       const timeEl = document.getElementById(`time_${tankNo}`);
       if (timeEl) {
         timeEl.textContent = timeStr ? `最後更新: ${timeStr}` : "更新時間: 尚未設定";
       }
 
-      // 如果是我自己操作的，廣播給全廠區！
       if (!isFromRemote) {
-        socket.emit('tank_changed', {
-          tankNo: tankNo,
-          level: newLevel,
-          vendors: newVendors,
-          timeStr: timeStr
-        });
+        socket.emit('tank_changed', { tankNo: tankNo, level: newLevel, vendors: newVendors, timeStr: timeStr });
       }
     }
 
-    // 5. 接收來自雲端伺服器的資料
     socket.on('init_data', (serverState) => {
       for (let tNo in serverState) {
         const data = serverState[tNo];
@@ -203,21 +261,15 @@
       applyChange(data.tankNo, data.level, data.vendors, data.timeStr, true);
     });
 
-    // 取得現在時間字串的公用功能
     function getNowString() {
       const now = new Date();
       return `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} ${now.toLocaleTimeString('zh-TW', { hour12: false })}`;
     }
 
-    // 6. 使用者操作事件
     function addVendor(tankNo) {
       const selectEl = document.getElementById(`vendor_select_${tankNo}`);
-      const selectedVendor = selectEl.value;
-      if (!selectedVendor) return; 
-
-      // 直接 push，不檢查重複，達成可重複供應商的功能
-      tankVendorsData[tankNo].push(selectedVendor); 
-      
+      if (!selectEl.value) return; 
+      tankVendorsData[tankNo].push(selectEl.value); 
       applyChange(tankNo, tankConfig.find(t=>t.tankNo===tankNo).currentLevel, tankVendorsData[tankNo], getNowString(), false);
       selectEl.value = ""; 
     }
@@ -233,27 +285,19 @@
       applyChange(tankNo, newValue, tankVendorsData[tankNo], timeStr, false);
     }
 
-    // 7. 每日跨日自動清除檢查器
     function checkNewDay() {
       const nowDay = new Date().getDate(); 
       if (nowDay !== currentDay) {
-        currentDay = nowDay; // 更新當前日期
-        
+        currentDay = nowDay;
         tankConfig.forEach(tank => {
           tankVendorsData[tank.tankNo] = []; 
-          // 透過 applyChange 觸發清空，並廣播給所有人
           applyChange(tank.tankNo, tank.currentLevel, [], getNowString(), false);
         });
-        console.log(`換日完成！已清除所有廠商紀錄 (${new Date().toLocaleDateString()})`);
       }
     }
 
-    // 啟動程式
     initDashboard();
-    
-    // 設定定時器：每 60 秒 (60000毫秒) 檢查一次是否換日
     setInterval(checkNewDay, 60000);
-
   </script>
 </body>
 </html>
