@@ -499,6 +499,27 @@ async function initDatabase() {
     `);
 
 
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS admin_history (
+            id BIGSERIAL PRIMARY KEY,
+            action_type VARCHAR(50) NOT NULL,
+            target_type VARCHAR(50) NOT NULL,
+            target_id VARCHAR(100) NOT NULL,
+            old_data JSONB,
+            new_data JSONB,
+            updated_by VARCHAR(50) NOT NULL,
+            ip_address VARCHAR(100),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+    `);
+
+
+    await pool.query(`
+        CREATE INDEX IF NOT EXISTS idx_admin_history_updated_at
+        ON admin_history (updated_at DESC)
+    `);
+
+
     for (const tank of INITIAL_TANKS) {
 
         const [
@@ -1396,6 +1417,73 @@ app.get(
 
 
 // =====================================================
+// 管理操作稽核
+// =====================================================
+
+function getRequestIp(req) {
+
+    return String(
+        req.ip ||
+        req.socket?.remoteAddress ||
+        'unknown'
+    ).slice(0, 100);
+}
+
+
+async function insertAdminHistory(
+    client,
+    {
+        actionType,
+        targetType,
+        targetId,
+        oldData,
+        newData,
+        username,
+        ipAddress
+    }
+) {
+
+    await client.query(
+        `
+        INSERT INTO admin_history (
+            action_type,
+            target_type,
+            target_id,
+            old_data,
+            new_data,
+            updated_by,
+            ip_address,
+            updated_at
+        )
+        VALUES (
+            $1,
+            $2,
+            $3,
+            $4::jsonb,
+            $5::jsonb,
+            $6,
+            $7,
+            NOW()
+        )
+        `,
+        [
+            actionType,
+            targetType,
+            String(targetId),
+            oldData === null
+                ? null
+                : JSON.stringify(oldData),
+            newData === null
+                ? null
+                : JSON.stringify(newData),
+            username,
+            ipAddress
+        ]
+    );
+}
+
+
+// =====================================================
 // 管理介面：讀取全部設定
 // =====================================================
 
@@ -1445,11 +1533,11 @@ app.get(
 
 
 // =====================================================
-// 管理介面：新增桶槽
+// 管理介面：管理操作稽核紀錄
 // =====================================================
 
-app.post(
-    '/api/admin/tanks',
+app.get(
+    '/api/admin/history',
     verifyApiToken,
     verifyAdmin,
     async (
@@ -1457,98 +1545,55 @@ app.post(
         res
     ) => {
 
-        const validation =
-            validateTankMasterInput(
-                req.body || {}
+        const requestedLimit =
+            Number(
+                req.query.limit || 100
             );
 
 
-        if (
-            !validation.success
-        ) {
-
-            return res
-                .status(400)
-                .json(validation);
-        }
-
-
-        const {
-            tankNo,
-            product,
-            maxLevel,
-            category,
-            sortOrder
-        } =
-        validation.data;
+        const limit =
+            [20, 50, 100, 200].includes(
+                requestedLimit
+            )
+                ? requestedLimit
+                : 100;
 
 
         try {
 
-            await pool.query(
-                `
-                INSERT INTO tank_master (
-                    tank_no,
-                    product,
-                    max_level,
-                    category,
-                    sort_order,
-                    enabled,
-                    created_at,
-                    updated_at
-                )
-                VALUES (
-                    $1,
-                    $2,
-                    $3,
-                    $4,
-                    $5,
-                    TRUE,
-                    NOW(),
-                    NOW()
-                )
-                `,
-                [
-                    tankNo,
-                    product,
-                    maxLevel,
-                    category,
-                    sortOrder
-                ]
-            );
-
-
-            console.log(
-                `⚙️ ${req.user.username} 新增桶槽 ${tankNo}`
-            );
+            const result =
+                await pool.query(
+                    `
+                    SELECT
+                        id,
+                        action_type,
+                        target_type,
+                        target_id,
+                        old_data,
+                        new_data,
+                        updated_by,
+                        ip_address,
+                        updated_at
+                    FROM admin_history
+                    ORDER BY updated_at DESC
+                    LIMIT $1
+                    `,
+                    [
+                        limit
+                    ]
+                );
 
 
             return res.json({
                 success: true,
-                message:
-                    '桶槽新增完成'
+                history:
+                    result.rows
             });
 
         } catch (error) {
 
-            if (
-                error &&
-                error.code ===
-                '23505'
-            ) {
-
-                return res
-                    .status(409)
-                    .json({
-                        success: false,
-                        message:
-                            `桶槽 ${tankNo} 已存在`
-                    });
-            }
-
-
             console.error(
-                '❌ 新增桶槽失敗:',
+                '❌ 讀取管理稽核紀錄失敗:',
                 error
             );
 
@@ -1558,8 +1603,148 @@ app.post(
                 .json({
                     success: false,
                     message:
+                        '讀取管理稽核紀錄失敗'
+                });
+        }
+    }
+);
+
+
+// =====================================================
+// 管理介面：新增桶槽
+// =====================================================
+
+app.post(
+    '/api/admin/tanks',
+    verifyApiToken,
+    verifyAdmin,
+    async (req, res) => {
+
+        const validation =
+            validateTankMasterInput(
+                req.body || {}
+            );
+
+        if (!validation.success) {
+            return res
+                .status(400)
+                .json(validation);
+        }
+
+        const {
+            tankNo,
+            product,
+            maxLevel,
+            category,
+            sortOrder
+        } = validation.data;
+
+        const client =
+            await pool.connect();
+
+        try {
+
+            await client.query('BEGIN');
+
+            const result =
+                await client.query(
+                    `
+                    INSERT INTO tank_master (
+                        tank_no,
+                        product,
+                        max_level,
+                        category,
+                        sort_order,
+                        enabled,
+                        created_at,
+                        updated_at
+                    )
+                    VALUES (
+                        $1, $2, $3, $4, $5,
+                        TRUE, NOW(), NOW()
+                    )
+                    RETURNING
+                        tank_no,
+                        product,
+                        max_level,
+                        category,
+                        sort_order,
+                        enabled
+                    `,
+                    [
+                        tankNo,
+                        product,
+                        maxLevel,
+                        category,
+                        sortOrder
+                    ]
+                );
+
+            await insertAdminHistory(
+                client,
+                {
+                    actionType:
+                        'CREATE_TANK',
+                    targetType:
+                        'TANK',
+                    targetId:
+                        tankNo,
+                    oldData:
+                        null,
+                    newData:
+                        result.rows[0],
+                    username:
+                        req.user.username,
+                    ipAddress:
+                        getRequestIp(req)
+                }
+            );
+
+            await client.query('COMMIT');
+
+            console.log(
+                `⚙️ ${req.user.username} 新增桶槽 ${tankNo}`
+            );
+
+            return res.json({
+                success: true,
+                message:
+                    '桶槽新增完成'
+            });
+
+        } catch (error) {
+
+            await client.query('ROLLBACK');
+
+            if (
+                error &&
+                error.code === '23505'
+            ) {
+                return res
+                    .status(409)
+                    .json({
+                        success: false,
+                        message:
+                            `桶槽 ${tankNo} 已存在`
+                    });
+            }
+
+            console.error(
+                '❌ 新增桶槽失敗:',
+                error
+            );
+
+            return res
+                .status(500)
+                .json({
+                    success: false,
+                    message:
                         '新增桶槽失敗'
                 });
+
+        } finally {
+
+            client.release();
         }
     }
 );
@@ -1574,16 +1759,12 @@ app.patch(
     '/api/admin/tanks/:tankNo',
     verifyApiToken,
     verifyAdmin,
-    async (
-        req,
-        res
-    ) => {
+    async (req, res) => {
 
         const tankNo =
             String(
                 req.params.tankNo || ''
             ).trim();
-
 
         const validation =
             validateTankMasterInput({
@@ -1598,22 +1779,16 @@ app.patch(
                     req.body.sortOrder
             });
 
-
-        if (
-            !validation.success
-        ) {
-
+        if (!validation.success) {
             return res
                 .status(400)
                 .json(validation);
         }
 
-
         if (
             typeof req.body.enabled !==
             'boolean'
         ) {
-
             return res
                 .status(400)
                 .json({
@@ -1623,11 +1798,49 @@ app.patch(
                 });
         }
 
+        const client =
+            await pool.connect();
 
         try {
 
+            await client.query('BEGIN');
+
+            const oldResult =
+                await client.query(
+                    `
+                    SELECT
+                        tank_no,
+                        product,
+                        max_level,
+                        category,
+                        sort_order,
+                        enabled
+                    FROM tank_master
+                    WHERE tank_no = $1
+                    FOR UPDATE
+                    `,
+                    [tankNo]
+                );
+
+            if (
+                oldResult.rows.length === 0
+            ) {
+                await client.query('ROLLBACK');
+
+                return res
+                    .status(404)
+                    .json({
+                        success: false,
+                        message:
+                            '找不到桶槽'
+                    });
+            }
+
+            const oldData =
+                oldResult.rows[0];
+
             const result =
-                await pool.query(
+                await client.query(
                     `
                     UPDATE tank_master
                     SET
@@ -1638,6 +1851,13 @@ app.patch(
                         enabled = $6,
                         updated_at = NOW()
                     WHERE tank_no = $1
+                    RETURNING
+                        tank_no,
+                        product,
+                        max_level,
+                        category,
+                        sort_order,
+                        enabled
                     `,
                     [
                         tankNo,
@@ -1649,25 +1869,48 @@ app.patch(
                     ]
                 );
 
+            const newData =
+                result.rows[0];
+
+            let actionType =
+                'UPDATE_TANK';
 
             if (
-                result.rowCount === 0
+                oldData.enabled === true &&
+                newData.enabled === false
             ) {
-
-                return res
-                    .status(404)
-                    .json({
-                        success: false,
-                        message:
-                            '找不到桶槽'
-                    });
+                actionType =
+                    'DISABLE_TANK';
+            } else if (
+                oldData.enabled === false &&
+                newData.enabled === true
+            ) {
+                actionType =
+                    'ENABLE_TANK';
             }
 
+            await insertAdminHistory(
+                client,
+                {
+                    actionType,
+                    targetType:
+                        'TANK',
+                    targetId:
+                        tankNo,
+                    oldData,
+                    newData,
+                    username:
+                        req.user.username,
+                    ipAddress:
+                        getRequestIp(req)
+                }
+            );
+
+            await client.query('COMMIT');
 
             console.log(
                 `⚙️ ${req.user.username} 修改桶槽 ${tankNo}`
             );
-
 
             return res.json({
                 success: true,
@@ -1677,11 +1920,12 @@ app.patch(
 
         } catch (error) {
 
+            await client.query('ROLLBACK');
+
             console.error(
                 '❌ 修改桶槽失敗:',
                 error
             );
-
 
             return res
                 .status(500)
@@ -1690,6 +1934,10 @@ app.patch(
                     message:
                         '修改桶槽失敗'
                 });
+
+        } finally {
+
+            client.release();
         }
     }
 );
@@ -1703,37 +1951,25 @@ app.post(
     '/api/admin/vendors',
     verifyApiToken,
     verifyAdmin,
-    async (
-        req,
-        res
-    ) => {
+    async (req, res) => {
 
         const vendorValidation =
             validateVendorName(
                 req.body.vendorName
             );
 
-
-        if (
-            !vendorValidation.success
-        ) {
-
+        if (!vendorValidation.success) {
             return res
                 .status(400)
                 .json(vendorValidation);
         }
-
 
         const sortOrder =
             normalizeSortOrder(
                 req.body.sortOrder
             );
 
-
-        if (
-            sortOrder === null
-        ) {
-
+        if (sortOrder === null) {
             return res
                 .status(400)
                 .json({
@@ -1743,37 +1979,65 @@ app.post(
                 });
         }
 
+        const client =
+            await pool.connect();
 
         try {
 
-            await pool.query(
-                `
-                INSERT INTO vendor_master (
-                    vendor_name,
-                    sort_order,
-                    enabled,
-                    created_at,
-                    updated_at
-                )
-                VALUES (
-                    $1,
-                    $2,
-                    TRUE,
-                    NOW(),
-                    NOW()
-                )
-                `,
-                [
-                    vendorValidation.vendorName,
-                    sortOrder
-                ]
+            await client.query('BEGIN');
+
+            const result =
+                await client.query(
+                    `
+                    INSERT INTO vendor_master (
+                        vendor_name,
+                        sort_order,
+                        enabled,
+                        created_at,
+                        updated_at
+                    )
+                    VALUES (
+                        $1, $2, TRUE, NOW(), NOW()
+                    )
+                    RETURNING
+                        id,
+                        vendor_name,
+                        sort_order,
+                        enabled
+                    `,
+                    [
+                        vendorValidation.vendorName,
+                        sortOrder
+                    ]
+                );
+
+            const newData =
+                result.rows[0];
+
+            await insertAdminHistory(
+                client,
+                {
+                    actionType:
+                        'CREATE_VENDOR',
+                    targetType:
+                        'VENDOR',
+                    targetId:
+                        String(newData.id),
+                    oldData:
+                        null,
+                    newData,
+                    username:
+                        req.user.username,
+                    ipAddress:
+                        getRequestIp(req)
+                }
             );
 
+            await client.query('COMMIT');
 
             console.log(
                 `⚙️ ${req.user.username} 新增廠商 ${vendorValidation.vendorName}`
             );
-
 
             return res.json({
                 success: true,
@@ -1783,12 +2047,12 @@ app.post(
 
         } catch (error) {
 
+            await client.query('ROLLBACK');
+
             if (
                 error &&
-                error.code ===
-                '23505'
+                error.code === '23505'
             ) {
-
                 return res
                     .status(409)
                     .json({
@@ -1798,12 +2062,10 @@ app.post(
                     });
             }
 
-
             console.error(
                 '❌ 新增廠商失敗:',
                 error
             );
-
 
             return res
                 .status(500)
@@ -1812,6 +2074,10 @@ app.post(
                     message:
                         '新增廠商失敗'
                 });
+
+        } finally {
+
+            client.release();
         }
     }
 );
@@ -1827,28 +2093,22 @@ app.patch(
     '/api/admin/vendors/:id',
     verifyApiToken,
     verifyAdmin,
-    async (
-        req,
-        res
-    ) => {
+    async (req, res) => {
 
         const id =
             Number(
                 req.params.id
             );
 
-
         const sortOrder =
             normalizeSortOrder(
                 req.body.sortOrder
             );
 
-
         if (
             !Number.isInteger(id) ||
             id <= 0
         ) {
-
             return res
                 .status(400)
                 .json({
@@ -1858,11 +2118,7 @@ app.patch(
                 });
         }
 
-
-        if (
-            sortOrder === null
-        ) {
-
+        if (sortOrder === null) {
             return res
                 .status(400)
                 .json({
@@ -1872,12 +2128,10 @@ app.patch(
                 });
         }
 
-
         if (
             typeof req.body.enabled !==
             'boolean'
         ) {
-
             return res
                 .status(400)
                 .json({
@@ -1887,31 +2141,32 @@ app.patch(
                 });
         }
 
+        const client =
+            await pool.connect();
 
         try {
 
-            const result =
-                await pool.query(
+            await client.query('BEGIN');
+
+            const oldResult =
+                await client.query(
                     `
-                    UPDATE vendor_master
-                    SET
-                        sort_order = $2,
-                        enabled = $3,
-                        updated_at = NOW()
-                    WHERE id = $1
-                    RETURNING vendor_name
-                    `,
-                    [
+                    SELECT
                         id,
-                        sortOrder,
-                        req.body.enabled
-                    ]
+                        vendor_name,
+                        sort_order,
+                        enabled
+                    FROM vendor_master
+                    WHERE id = $1
+                    FOR UPDATE
+                    `,
+                    [id]
                 );
 
-
             if (
-                result.rows.length === 0
+                oldResult.rows.length === 0
             ) {
+                await client.query('ROLLBACK');
 
                 return res
                     .status(404)
@@ -1922,11 +2177,73 @@ app.patch(
                     });
             }
 
+            const oldData =
+                oldResult.rows[0];
 
-            console.log(
-                `⚙️ ${req.user.username} 修改廠商 ${result.rows[0].vendor_name}`
+            const result =
+                await client.query(
+                    `
+                    UPDATE vendor_master
+                    SET
+                        sort_order = $2,
+                        enabled = $3,
+                        updated_at = NOW()
+                    WHERE id = $1
+                    RETURNING
+                        id,
+                        vendor_name,
+                        sort_order,
+                        enabled
+                    `,
+                    [
+                        id,
+                        sortOrder,
+                        req.body.enabled
+                    ]
+                );
+
+            const newData =
+                result.rows[0];
+
+            let actionType =
+                'UPDATE_VENDOR';
+
+            if (
+                oldData.enabled === true &&
+                newData.enabled === false
+            ) {
+                actionType =
+                    'DISABLE_VENDOR';
+            } else if (
+                oldData.enabled === false &&
+                newData.enabled === true
+            ) {
+                actionType =
+                    'ENABLE_VENDOR';
+            }
+
+            await insertAdminHistory(
+                client,
+                {
+                    actionType,
+                    targetType:
+                        'VENDOR',
+                    targetId:
+                        String(id),
+                    oldData,
+                    newData,
+                    username:
+                        req.user.username,
+                    ipAddress:
+                        getRequestIp(req)
+                }
             );
 
+            await client.query('COMMIT');
+
+            console.log(
+                `⚙️ ${req.user.username} 修改廠商 ${newData.vendor_name}`
+            );
 
             return res.json({
                 success: true,
@@ -1936,11 +2253,12 @@ app.patch(
 
         } catch (error) {
 
+            await client.query('ROLLBACK');
+
             console.error(
                 '❌ 修改廠商失敗:',
                 error
             );
-
 
             return res
                 .status(500)
@@ -1949,6 +2267,10 @@ app.patch(
                     message:
                         '修改廠商失敗'
                 });
+
+        } finally {
+
+            client.release();
         }
     }
 );
