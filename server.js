@@ -3315,6 +3315,518 @@ io.on(
         );
 
 
+
+        // =================================================
+        // v1.5.0 總表批次更新
+        // 一次確認、一次交易：
+        // 1. 多個桶槽液位更新
+        // 2. 多筆今日廠商新增
+        // 3. 多筆今日廠商軟刪除
+        // 全部成功才 COMMIT，任一錯誤即全部 ROLLBACK。
+        // =================================================
+
+        socket.on(
+            'batch_update',
+            async data => {
+
+                const levelChanges =
+                    Array.isArray(data?.levelChanges)
+                        ? data.levelChanges
+                        : [];
+
+                const vendorAdds =
+                    Array.isArray(data?.vendorAdds)
+                        ? data.vendorAdds
+                        : [];
+
+                const vendorRemoves =
+                    Array.isArray(data?.vendorRemoves)
+                        ? data.vendorRemoves
+                        : [];
+
+
+                if (
+                    levelChanges.length === 0 &&
+                    vendorAdds.length === 0 &&
+                    vendorRemoves.length === 0
+                ) {
+
+                    socket.emit(
+                        'batch_update_result',
+                        {
+                            success: false,
+                            message:
+                                '沒有需要更新的資料'
+                        }
+                    );
+
+                    return;
+                }
+
+
+                const client =
+                    await pool.connect();
+
+
+                const changedLevels = [];
+                const addedVendors = [];
+                const removedVendors = [];
+
+
+                try {
+
+                    await client.query(
+                        'BEGIN'
+                    );
+
+
+                    // -----------------------------
+                    // 液位更新
+                    // -----------------------------
+
+                    for (
+                        const item of levelChanges
+                    ) {
+
+                        const tankNo =
+                            typeof item?.tankNo ===
+                            'string'
+                                ? item.tankNo.trim()
+                                : '';
+
+                        const level =
+                            Number(
+                                item?.level
+                            );
+
+
+                        if (
+                            !Number.isFinite(level) ||
+                            level < 0
+                        ) {
+
+                            throw new Error(
+                                `${tankNo || '未知桶槽'} 液位格式錯誤`
+                            );
+                        }
+
+
+                        const tankResult =
+                            await client.query(
+                                `
+                                SELECT
+                                    tank_no,
+                                    max_level
+                                FROM tank_master
+                                WHERE
+                                    tank_no = $1
+                                    AND enabled = TRUE
+                                `,
+                                [
+                                    tankNo
+                                ]
+                            );
+
+
+                        if (
+                            tankResult.rows.length === 0
+                        ) {
+
+                            throw new Error(
+                                `桶槽不存在或已停用：${tankNo}`
+                            );
+                        }
+
+
+                        const oldResult =
+                            await client.query(
+                                `
+                                SELECT
+                                    level
+                                FROM tank_state
+                                WHERE tank_no = $1
+                                FOR UPDATE
+                                `,
+                                [
+                                    tankNo
+                                ]
+                            );
+
+
+                        const oldLevel =
+                            oldResult.rows.length === 0
+                                ? 0
+                                : Number(
+                                    oldResult.rows[0].level
+                                );
+
+
+                        if (
+                            oldLevel === level
+                        ) {
+                            continue;
+                        }
+
+
+                        const serverTimeStr =
+                            getTaipeiTimeString();
+
+
+                        await client.query(
+                            `
+                            INSERT INTO tank_state (
+                                tank_no,
+                                level,
+                                vendors,
+                                time_str,
+                                updated_by,
+                                updated_at
+                            )
+                            VALUES (
+                                $1,
+                                $2,
+                                '[]'::jsonb,
+                                $3,
+                                $4,
+                                NOW()
+                            )
+                            ON CONFLICT (tank_no)
+                            DO UPDATE SET
+                                level =
+                                    EXCLUDED.level,
+                                time_str =
+                                    EXCLUDED.time_str,
+                                updated_by =
+                                    EXCLUDED.updated_by,
+                                updated_at =
+                                    NOW()
+                            `,
+                            [
+                                tankNo,
+                                level,
+                                serverTimeStr,
+                                socket.user.username
+                            ]
+                        );
+
+
+                        await client.query(
+                            `
+                            INSERT INTO tank_history (
+                                tank_no,
+                                old_level,
+                                new_level,
+                                old_vendors,
+                                new_vendors,
+                                updated_by,
+                                updated_at
+                            )
+                            VALUES (
+                                $1,
+                                $2,
+                                $3,
+                                '[]'::jsonb,
+                                '[]'::jsonb,
+                                $4,
+                                NOW()
+                            )
+                            `,
+                            [
+                                tankNo,
+                                oldLevel,
+                                level,
+                                socket.user.username
+                            ]
+                        );
+
+
+                        changedLevels.push({
+                            tankNo,
+                            level,
+                            timeStr:
+                                serverTimeStr
+                        });
+                    }
+
+
+                    // -----------------------------
+                    // 今日廠商新增
+                    // 同一廠商可新增多次
+                    // -----------------------------
+
+                    for (
+                        const item of vendorAdds
+                    ) {
+
+                        const tankNo =
+                            typeof item?.tankNo ===
+                            'string'
+                                ? item.tankNo.trim()
+                                : '';
+
+                        const vendorName =
+                            typeof item?.vendorName ===
+                            'string'
+                                ? item.vendorName.trim()
+                                : '';
+
+
+                        const tankResult =
+                            await client.query(
+                                `
+                                SELECT
+                                    tank_no
+                                FROM tank_master
+                                WHERE
+                                    tank_no = $1
+                                    AND enabled = TRUE
+                                `,
+                                [
+                                    tankNo
+                                ]
+                            );
+
+
+                        if (
+                            tankResult.rows.length === 0
+                        ) {
+
+                            throw new Error(
+                                `桶槽不存在或已停用：${tankNo}`
+                            );
+                        }
+
+
+                        const vendor =
+                            await getActiveVendorByName(
+                                client,
+                                vendorName
+                            );
+
+
+                        if (!vendor) {
+
+                            throw new Error(
+                                `廠商不存在或已停用：${vendorName}`
+                            );
+                        }
+
+
+                        const insertResult =
+                            await client.query(
+                                `
+                                INSERT INTO tank_vendor_records (
+                                    tank_no,
+                                    vendor_id,
+                                    added_by,
+                                    added_at
+                                )
+                                VALUES (
+                                    $1,
+                                    $2,
+                                    $3,
+                                    NOW()
+                                )
+                                RETURNING
+                                    id,
+                                    added_at
+                                `,
+                                [
+                                    tankNo,
+                                    vendor.id,
+                                    socket.user.username
+                                ]
+                            );
+
+
+                        addedVendors.push({
+                            id:
+                                Number(
+                                    insertResult.rows[0].id
+                                ),
+                            tankNo,
+                            vendorName:
+                                vendor.vendorName,
+                            addedBy:
+                                socket.user.username,
+                            addedAt:
+                                insertResult.rows[0].added_at
+                        });
+                    }
+
+
+                    // -----------------------------
+                    // 今日廠商移除（軟刪除）
+                    // -----------------------------
+
+                    for (
+                        const item of vendorRemoves
+                    ) {
+
+                        const recordId =
+                            Number(
+                                item?.recordId
+                            );
+
+
+                        if (
+                            !Number.isInteger(recordId) ||
+                            recordId <= 0
+                        ) {
+
+                            throw new Error(
+                                '廠商紀錄 ID 錯誤'
+                            );
+                        }
+
+
+                        const removeResult =
+                            await client.query(
+                                `
+                                UPDATE tank_vendor_records
+                                SET
+                                    removed_by = $2,
+                                    removed_at = NOW()
+                                WHERE
+                                    id = $1
+                                    AND removed_at IS NULL
+                                    AND
+                                    (
+                                        added_at
+                                        AT TIME ZONE 'Asia/Taipei'
+                                    )::date
+                                    =
+                                    (
+                                        NOW()
+                                        AT TIME ZONE 'Asia/Taipei'
+                                    )::date
+                                RETURNING
+                                    id,
+                                    tank_no
+                                `,
+                                [
+                                    recordId,
+                                    socket.user.username
+                                ]
+                            );
+
+
+                        if (
+                            removeResult.rows.length === 0
+                        ) {
+
+                            throw new Error(
+                                `廠商紀錄 ${recordId} 不存在、已移除或不是今天紀錄`
+                            );
+                        }
+
+
+                        removedVendors.push({
+                            id:
+                                recordId,
+                            tankNo:
+                                removeResult.rows[0].tank_no,
+                            removedBy:
+                                socket.user.username
+                        });
+                    }
+
+
+                    await client.query(
+                        'COMMIT'
+                    );
+
+
+                    // 交易完成後才同步所有裝置
+                    changedLevels.forEach(
+                        item => {
+
+                            io.emit(
+                                'sync_tank',
+                                item
+                            );
+                        }
+                    );
+
+
+                    addedVendors.forEach(
+                        item => {
+
+                            io.emit(
+                                'vendor_added',
+                                item
+                            );
+                        }
+                    );
+
+
+                    removedVendors.forEach(
+                        item => {
+
+                            io.emit(
+                                'vendor_removed',
+                                item
+                            );
+                        }
+                    );
+
+
+                    console.log(
+                        `🧾 ${socket.user.username} 完成總表更新：` +
+                        `液位 ${changedLevels.length} 筆、` +
+                        `新增廠商 ${addedVendors.length} 筆、` +
+                        `移除廠商 ${removedVendors.length} 筆`
+                    );
+
+
+                    socket.emit(
+                        'batch_update_result',
+                        {
+                            success: true,
+                            message:
+                                '總表更新完成',
+                            levelCount:
+                                changedLevels.length,
+                            vendorAddCount:
+                                addedVendors.length,
+                            vendorRemoveCount:
+                                removedVendors.length
+                        }
+                    );
+
+                } catch (error) {
+
+                    try {
+                        await client.query(
+                            'ROLLBACK'
+                        );
+                    } catch (_) {}
+
+
+                    console.error(
+                        '❌ 總表批次更新失敗:',
+                        error
+                    );
+
+
+                    socket.emit(
+                        'batch_update_result',
+                        {
+                            success: false,
+                            message:
+                                error?.message ||
+                                '總表更新失敗'
+                        }
+                    );
+
+                } finally {
+
+                    client.release();
+                }
+            }
+        );
+
+
         socket.on(
             'disconnect',
             () => {
