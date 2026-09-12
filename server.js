@@ -33,11 +33,11 @@ app.post('/api/login', (req, res) => {
         validAccounts[username] === password
     ) {
 
-        // 登入成功後產生 30分鐘有效的通行證
+        // 登入成功後產生 8小時有效的通行證
         const token = jwt.sign(
             { username: username },
             JWT_SECRET,
-            { expiresIn: '30m' }
+            { expiresIn: '8h' }
         );
 
         return res.json({
