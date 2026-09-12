@@ -8,8 +8,135 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+app.set('trust proxy', 1);
+
 app.use(express.json());
 app.use(express.static('public'));
+
+
+// =====================================================
+// 登入失敗限制
+// 同一 IP 在 15 分鐘內最多失敗 5 次。
+// 成功登入後立即清除該 IP 的失敗紀錄。
+// Render 重啟後此紀錄會重置，屬於輕量型防暴力破解。
+// =====================================================
+
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const LOGIN_MAX_FAILURES = 5;
+
+const loginFailures = new Map();
+
+
+function getLoginClientIp(req) {
+
+    return String(
+        req.ip ||
+        req.socket?.remoteAddress ||
+        'unknown'
+    );
+}
+
+
+function getLoginFailureState(ip) {
+
+    const now = Date.now();
+
+    const state =
+        loginFailures.get(ip);
+
+
+    if (
+        !state ||
+        now >= state.resetAt
+    ) {
+
+        const newState = {
+            count: 0,
+            resetAt:
+                now + LOGIN_WINDOW_MS
+        };
+
+
+        loginFailures.set(
+            ip,
+            newState
+        );
+
+
+        return newState;
+    }
+
+
+    return state;
+}
+
+
+function isLoginBlocked(ip) {
+
+    const state =
+        getLoginFailureState(ip);
+
+
+    return (
+        state.count >=
+        LOGIN_MAX_FAILURES
+    );
+}
+
+
+function recordLoginFailure(ip) {
+
+    const state =
+        getLoginFailureState(ip);
+
+
+    state.count += 1;
+
+
+    loginFailures.set(
+        ip,
+        state
+    );
+
+
+    return state;
+}
+
+
+function clearLoginFailures(ip) {
+
+    loginFailures.delete(ip);
+}
+
+
+setInterval(
+    () => {
+
+        const now =
+            Date.now();
+
+
+        for (
+            const [
+                ip,
+                state
+            ]
+            of loginFailures.entries()
+        ) {
+
+            if (
+                now >=
+                state.resetAt
+            ) {
+
+                loginFailures.delete(
+                    ip
+                );
+            }
+        }
+    },
+    10 * 60 * 1000
+).unref();
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -1013,11 +1140,59 @@ app.post(
         res
     ) => {
 
+        const ip =
+            getLoginClientIp(
+                req
+            );
+
+
+        if (
+            isLoginBlocked(
+                ip
+            )
+        ) {
+
+            const state =
+                getLoginFailureState(
+                    ip
+                );
+
+
+            const remainingSeconds =
+                Math.max(
+                    1,
+                    Math.ceil(
+                        (
+                            state.resetAt -
+                            Date.now()
+                        ) / 1000
+                    )
+                );
+
+
+            res.set(
+                'Retry-After',
+                String(
+                    remainingSeconds
+                )
+            );
+
+
+            return res
+                .status(429)
+                .json({
+                    success: false,
+                    message:
+                        '登入失敗次數過多，請稍後再試'
+                });
+        }
+
+
         const {
             username,
             password
         } =
-        req.body;
+        req.body || {};
 
 
         if (
@@ -1030,6 +1205,11 @@ app.post(
             ] ===
             password
         ) {
+
+            clearLoginFailures(
+                ip
+            );
+
 
             const token =
                 jwt.sign(
@@ -1052,10 +1232,33 @@ app.post(
         }
 
 
+        const state =
+            recordLoginFailure(
+                ip
+            );
+
+
+        const remainingAttempts =
+            Math.max(
+                0,
+                LOGIN_MAX_FAILURES -
+                state.count
+            );
+
+
+        console.warn(
+            `⚠️ 登入失敗 IP=${ip} 次數=${state.count}`
+        );
+
+
         return res
             .status(401)
             .json({
-                success: false
+                success: false,
+                message:
+                    remainingAttempts > 0
+                        ? `帳號或密碼錯誤，剩餘嘗試次數 ${remainingAttempts}`
+                        : '登入失敗次數過多，請稍後再試'
             });
     }
 );
