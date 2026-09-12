@@ -2,7 +2,6 @@
 <html lang="zh-TW">
 
 <head>
-
   <meta charset="UTF-8">
 
   <meta
@@ -10,20 +9,14 @@
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
   >
 
-  <title>
-    名泰化學 - 桶槽即時監控
-  </title>
-
+  <title>名泰化學 - 桶槽即時監控</title>
 
   <style>
-
     * {
       box-sizing: border-box;
     }
 
-
     body {
-
       font-family:
         'Segoe UI',
         Tahoma,
@@ -32,41 +25,27 @@
         sans-serif;
 
       background-color: #f4f6f9;
-
       padding: 20px;
-
       margin: 0;
-
     }
-
 
     h2 {
-
       text-align: center;
-
       color: #333;
-
       margin-bottom: 15px;
-
     }
 
-
     /* =========================================
-       右上角登入狀態 + 倒數
+       右上角登入狀態
        ========================================= */
 
     .top-status {
-
       position: fixed;
-
       top: 10px;
-
       right: 10px;
-
       z-index: 5000;
 
       background: white;
-
       padding: 8px 14px;
 
       border-radius: 20px;
@@ -75,172 +54,96 @@
         0 2px 10px rgba(0,0,0,0.15);
 
       font-size: 13px;
-
       font-weight: bold;
-
       color: #34495e;
 
       display: none;
-
       align-items: center;
-
       gap: 8px;
-
     }
-
 
     #idle-timer {
-
       color: #27ae60;
-
     }
-
 
     #idle-timer.warning {
-
       color: #e74c3c;
-
-      animation:
-        timerFlash 1s infinite;
-
+      animation: timerFlash 1s infinite;
     }
-
 
     @keyframes timerFlash {
-
-      0% {
-        opacity: 1;
-      }
-
-      50% {
-        opacity: 0.45;
-      }
-
-      100% {
-        opacity: 1;
-      }
-
+      0% { opacity: 1; }
+      50% { opacity: 0.45; }
+      100% { opacity: 1; }
     }
-
 
     .history-small-btn {
-
       border: none;
-
       background: #8e44ad;
-
       color: white;
-
       border-radius: 14px;
-
       padding: 5px 9px;
-
       font-size: 11px;
-
       font-weight: bold;
-
       cursor: pointer;
-
     }
-
 
     .history-small-btn:hover {
-
       background: #71368a;
-
     }
-
 
     .logout-small-btn {
-
       border: none;
-
       background: #e74c3c;
-
       color: white;
-
       border-radius: 14px;
-
       padding: 5px 9px;
-
       font-size: 11px;
-
       font-weight: bold;
-
       cursor: pointer;
-
     }
-
 
     .logout-small-btn:hover {
-
       background: #c0392b;
-
     }
-
 
     /* =========================================
        分類
        ========================================= */
 
     .tabs-container {
-
       display: flex;
-
       justify-content: center;
-
       flex-wrap: wrap;
-
       gap: 10px;
-
       margin-bottom: 25px;
-
     }
-
 
     .tab-btn {
-
       padding: 8px 18px;
-
       border: 2px solid #1c8ebf;
-
       background-color: transparent;
-
       color: #1c8ebf;
-
       border-radius: 20px;
-
       cursor: pointer;
-
       font-size: 15px;
-
       font-weight: bold;
-
       transition: all 0.3s;
-
     }
-
 
     .tab-btn:hover,
     .tab-btn.active {
-
       background-color: #1c8ebf;
-
       color: white;
-
       box-shadow:
-        0 4px 10px
-        rgba(28,142,191,0.3);
-
+        0 4px 10px rgba(28,142,191,0.3);
     }
-
 
     /* =========================================
        桶槽
        ========================================= */
 
     .grid-container {
-
       display: grid;
 
       grid-template-columns:
@@ -250,351 +153,198 @@
         );
 
       gap: 20px;
-
       max-width: 1500px;
-
       margin: 0 auto;
-
     }
 
-
     .tank-card {
-
       background: white;
-
       border-radius: 12px;
-
       padding: 15px;
 
       box-shadow:
-        0 4px 10px
-        rgba(0,0,0,0.05);
+        0 4px 10px rgba(0,0,0,0.05);
 
       text-align: center;
 
       display: flex;
-
       flex-direction: column;
-
       align-items: center;
-
     }
-
 
     .tank-no {
-
       font-size: 18px;
-
       font-weight: 900;
-
       color: #2c3e50;
-
       background-color: #ecf0f1;
-
       padding: 4px 12px;
-
       border-radius: 20px;
-
       margin-bottom: 5px;
-
     }
-
 
     .product-name {
-
       font-size: 16px;
-
       font-weight: bold;
-
       color: #16a085;
-
       margin-bottom: 12px;
-
     }
-
 
     .tank-wrapper {
-
       height: 200px;
-
       display: flex;
-
       align-items: flex-end;
-
       margin-bottom: 15px;
-
     }
 
-
     .tank-style {
-
       width: 100px;
-
       height: 180px;
-
       border: 3px solid #555;
-
-      border-radius:
-        0 0 16px 16px;
-
+      border-radius: 0 0 16px 16px;
       background-color: #eef2f5;
 
       display: flex;
-
       flex-direction: column;
-
       justify-content: flex-end;
-
       overflow: hidden;
-
     }
 
-
     .liquid-style {
-
       width: 100%;
-
       background-color: #3498db;
 
       transition:
         height 0.3s ease-out,
         background-color 0.5s;
-
     }
-
 
     .info-text {
-
       font-size: 14px;
-
       color: #333;
-
       margin: 2px 0;
-
       font-weight: bold;
-
     }
-
 
     .vendor-section {
-
       width: 100%;
-
       margin: 10px 0;
-
-      border-top:
-        1px dashed #ccc;
-
+      border-top: 1px dashed #ccc;
       padding-top: 10px;
-
     }
-
 
     .vendor-input-group {
-
       display: flex;
-
       gap: 5px;
-
       justify-content: center;
-
       margin-bottom: 8px;
-
     }
-
 
     .vendor-input-group select {
-
       padding: 4px;
-
-      border:
-        1px solid #ccc;
-
+      border: 1px solid #ccc;
       border-radius: 4px;
-
       flex-grow: 1;
-
+      min-width: 0;
     }
-
 
     .vendor-input-group button {
-
       background-color: #16a085;
-
       color: white;
-
       border: none;
-
       border-radius: 4px;
-
       padding: 4px 8px;
-
       cursor: pointer;
-
       font-size: 13px;
-
     }
-
 
     .vendor-tags {
-
       display: flex;
-
       flex-wrap: wrap;
-
       gap: 5px;
-
       justify-content: center;
-
       min-height: 24px;
-
     }
 
-
     .vendor-chip {
-
       background-color: #e8f8f5;
-
       color: #0e6655;
-
-      border:
-        1px solid #1abc9c;
-
+      border: 1px solid #1abc9c;
       padding: 4px 10px;
-
       border-radius: 14px;
-
       font-size: 14px;
 
       display: flex;
-
       align-items: center;
-
       gap: 6px;
-
     }
-
 
     .remove-btn {
-
       cursor: pointer;
-
       color: #e74c3c;
-
       font-weight: bold;
-
     }
-
 
     .empty-vendor {
-
       font-size: 12px;
-
       color: #aaa;
-
       margin-top: 4px;
-
     }
-
 
     .time-text {
-
       font-size: 12px;
-
       color: #95a5a6;
-
       margin-bottom: 10px;
-
       white-space: nowrap;
-
     }
 
-
     .card-controls {
-
       margin-top: 5px;
-
       width: 100%;
 
       display: flex;
-
       justify-content: center;
-
       align-items: center;
-
       gap: 6px;
-
       flex-wrap: wrap;
-
     }
-
 
     .card-controls input {
-
       width: 80px;
-
       padding: 8px;
-
       font-size: 18px;
-
       font-weight: bold;
-
       color: #2c3e50;
-
-      border:
-        2px solid #bdc3c7;
-
+      border: 2px solid #bdc3c7;
       border-radius: 6px;
-
       text-align: center;
-
       outline: none;
-
     }
-
 
     .update-btn {
-
       padding: 9px 10px;
-
       border: none;
-
       border-radius: 6px;
-
       background-color: #3498db;
-
       color: white;
-
       font-weight: bold;
-
       cursor: pointer;
-
       font-size: 13px;
-
     }
-
 
     .update-btn:hover {
-
       background-color: #2980b9;
-
     }
-
 
     /* =========================================
        登入畫面
        ========================================= */
 
     #login-overlay {
-
       position: fixed;
-
       top: 0;
-
       left: 0;
 
       width: 100%;
-
       height: 100%;
 
       background-color: #f4f7f9;
@@ -602,473 +352,271 @@
       z-index: 9999;
 
       display: flex;
-
       justify-content: center;
-
       align-items: center;
-
     }
 
-
     .login-card {
-
       background: white;
-
       width: 90%;
-
       max-width: 380px;
-
       padding: 40px 30px;
-
       border-radius: 10px;
 
       box-shadow:
-        0 10px 30px
-        rgba(0,0,0,0.08);
+        0 10px 30px rgba(0,0,0,0.08);
 
-      border-top:
-        5px solid #1c8ebf;
-
+      border-top: 5px solid #1c8ebf;
     }
-
 
     .login-logo {
-
       text-align: center;
-
       margin-bottom: 30px;
-
-      border-bottom:
-        1px solid #eee;
-
+      border-bottom: 1px solid #eee;
       padding-bottom: 20px;
-
     }
-
 
     .login-logo .logo-text {
-
       font-size: 24px;
-
       color: #005b8f;
-
       font-weight: bold;
-
     }
-
 
     .login-logo .logo-sub {
-
       font-size: 12px;
-
       color: #7f8c8d;
-
       margin-top: 5px;
-
     }
-
 
     .login-input-group {
-
       margin-bottom: 20px;
-
     }
-
 
     .login-input-group label {
-
       display: block;
-
       font-size: 14px;
-
       margin-bottom: 8px;
-
       font-weight: bold;
-
     }
-
 
     .login-input-group input {
-
       width: 100%;
-
       padding: 12px 15px;
-
-      border:
-        1px solid #dcdde1;
-
+      border: 1px solid #dcdde1;
       border-radius: 6px;
-
       font-size: 16px;
-
       outline: none;
-
     }
-
 
     .login-btn {
-
       width: 100%;
-
       background-color: #1c8ebf;
-
       color: white;
-
       border: none;
-
       padding: 14px;
-
       border-radius: 6px;
-
       font-size: 16px;
-
       cursor: pointer;
-
       font-weight: bold;
-
     }
-
 
     #login-error {
-
       color: #e74c3c;
-
       font-size: 13px;
-
       margin-bottom: 15px;
-
       display: none;
-
       text-align: center;
-
       font-weight: bold;
-
     }
 
-
     /* =========================================
-       操作紀錄視窗
+       操作紀錄
        ========================================= */
 
     #history-overlay {
-
       position: fixed;
-
       top: 0;
-
       left: 0;
 
       width: 100%;
-
       height: 100%;
 
-      background:
-        rgba(0,0,0,0.5);
+      background: rgba(0,0,0,0.5);
 
       z-index: 9000;
 
       display: none;
-
       justify-content: center;
-
       align-items: center;
 
       padding: 20px;
-
     }
 
-
     .history-panel {
-
       background: white;
-
       width: 95%;
-
       max-width: 1100px;
-
       max-height: 90vh;
-
       border-radius: 12px;
 
       display: flex;
-
       flex-direction: column;
 
       overflow: hidden;
 
       box-shadow:
-        0 10px 40px
-        rgba(0,0,0,0.25);
-
+        0 10px 40px rgba(0,0,0,0.25);
     }
 
-
     .history-header {
-
       display: flex;
-
       justify-content: space-between;
-
       align-items: center;
 
       padding: 16px 20px;
 
-      border-bottom:
-        1px solid #ddd;
-
+      border-bottom: 1px solid #ddd;
       background: #fafafa;
-
     }
-
 
     .history-title {
-
       font-size: 20px;
-
       font-weight: bold;
-
       color: #2c3e50;
-
     }
-
 
     .history-close {
-
       border: none;
-
       background: #e74c3c;
-
       color: white;
-
       width: 34px;
-
       height: 34px;
-
       border-radius: 50%;
-
       font-size: 18px;
-
       cursor: pointer;
-
       font-weight: bold;
-
     }
 
-
     .history-controls {
-
       padding: 12px 20px;
 
       display: flex;
-
       gap: 10px;
-
       align-items: center;
-
       flex-wrap: wrap;
 
-      border-bottom:
-        1px solid #eee;
-
+      border-bottom: 1px solid #eee;
     }
-
 
     .history-controls label {
-
       font-size: 13px;
-
       font-weight: bold;
-
       color: #555;
-
     }
-
 
     .history-controls select {
-
       padding: 7px 9px;
-
-      border:
-        1px solid #ccc;
-
+      border: 1px solid #ccc;
       border-radius: 6px;
-
       background: white;
-
     }
-
 
     .history-refresh-btn {
-
       border: none;
-
       background: #3498db;
-
       color: white;
-
       padding: 8px 12px;
-
       border-radius: 6px;
-
       cursor: pointer;
-
       font-weight: bold;
-
     }
-
 
     .history-status {
-
       padding: 8px 20px;
-
       font-size: 13px;
-
       color: #7f8c8d;
-
     }
-
 
     .history-table-wrapper {
-
       overflow: auto;
-
       flex: 1;
-
       padding: 0 20px 20px 20px;
-
     }
-
 
     .history-table {
-
       width: 100%;
-
       border-collapse: collapse;
-
       min-width: 780px;
-
     }
-
 
     .history-table th {
-
       position: sticky;
-
       top: 0;
-
       background: #34495e;
-
       color: white;
-
       padding: 10px;
-
       font-size: 13px;
-
       text-align: left;
-
       z-index: 2;
-
     }
-
 
     .history-table td {
-
-      border-bottom:
-        1px solid #eee;
-
+      border-bottom: 1px solid #eee;
       padding: 10px;
-
       font-size: 13px;
-
       vertical-align: top;
-
     }
-
 
     .history-table tr:nth-child(even) {
-
       background: #fafafa;
-
     }
-
 
     .change-level {
-
       font-weight: bold;
-
       color: #2980b9;
-
     }
-
 
     .vendor-added {
-
       color: #16a085;
-
       font-weight: bold;
-
     }
-
 
     .vendor-removed {
-
       color: #c0392b;
-
       font-weight: bold;
-
     }
-
 
     .no-change {
-
       color: #95a5a6;
-
     }
 
+    /* =========================================
+       手機
+       ========================================= */
 
-    @media (
-      max-width: 768px
-    ) {
+    @media (max-width: 768px) {
 
       body {
-
-        padding:
-          70px 8px 15px 8px;
-
+        padding: 70px 8px 15px 8px;
       }
-
 
       .top-status {
-
         top: 8px;
-
         right: 8px;
-
         left: 8px;
-
         justify-content: center;
-
         border-radius: 12px;
-
         gap: 5px;
-
         font-size: 11px;
-
       }
-
 
       .history-small-btn,
       .logout-small-btn {
-
         font-size: 10px;
-
         padding: 5px 7px;
-
       }
 
-
       .grid-container {
-
         grid-template-columns:
           repeat(
             2,
@@ -1076,129 +624,76 @@
           );
 
         gap: 10px;
-
       }
-
 
       .tank-card {
-
         padding: 10px;
-
       }
-
 
       .tank-style {
-
         width: 70px;
-
         height: 140px;
-
       }
-
 
       .tank-wrapper {
-
         height: 155px;
-
       }
-
 
       .tank-no {
-
         font-size: 15px;
-
       }
-
 
       .tab-btn {
-
         padding: 6px 12px;
-
         font-size: 13px;
-
       }
-
 
       .card-controls input {
-
         width: 65px;
-
         font-size: 16px;
-
       }
-
 
       .update-btn {
-
         font-size: 12px;
-
         padding: 8px;
-
       }
-
 
       #history-overlay {
-
         padding: 8px;
-
       }
-
 
       .history-panel {
-
         width: 100%;
-
         max-height: 94vh;
-
       }
-
 
       .history-header {
-
         padding: 12px;
-
       }
-
 
       .history-title {
-
         font-size: 17px;
-
       }
-
 
       .history-controls {
-
         padding: 10px;
-
       }
-
 
       .history-table-wrapper {
-
-        padding:
-          0 10px 10px 10px;
-
+        padding: 0 10px 10px 10px;
       }
-
     }
-
   </style>
-
 </head>
 
 
 <body>
 
-
   <!-- ======================================
        右上角狀態
        ====================================== -->
 
-  <div
-    id="top-status"
-    class="top-status"
-  >
+  <div id="top-status" class="top-status">
 
     <span id="login-user">
       👤
@@ -1245,16 +740,11 @@
 
       </div>
 
-
-      <h3>
-        登入
-      </h3>
-
+      <h3>登入</h3>
 
       <p>
         請輸入員工編號登入營運控制台
       </p>
-
 
       <div class="login-input-group">
 
@@ -1271,7 +761,6 @@
 
       </div>
 
-
       <div class="login-input-group">
 
         <label>
@@ -1287,11 +776,9 @@
 
       </div>
 
-
       <div id="login-error">
         帳號或密碼錯誤
       </div>
-
 
       <button
         class="login-btn"
@@ -1328,7 +815,6 @@
 
       </div>
 
-
       <div class="history-controls">
 
         <label>
@@ -1343,7 +829,6 @@
             全部桶槽
           </option>
         </select>
-
 
         <label>
           顯示：
@@ -1375,7 +860,6 @@
 
         </select>
 
-
         <button
           class="history-refresh-btn"
           onclick="loadHistory()"
@@ -1385,7 +869,6 @@
 
       </div>
 
-
       <div
         id="history-status"
         class="history-status"
@@ -1393,38 +876,20 @@
         尚未載入
       </div>
 
-
       <div class="history-table-wrapper">
 
         <table class="history-table">
 
           <thead>
-
             <tr>
-
-              <th>
-                時間
-              </th>
-
-              <th>
-                帳號
-              </th>
-
-              <th>
-                桶槽
-              </th>
-
-              <th>
-                變更內容
-              </th>
-
+              <th>時間</th>
+              <th>帳號</th>
+              <th>桶槽</th>
+              <th>變更內容</th>
             </tr>
-
           </thead>
 
-
           <tbody id="history-body">
-
           </tbody>
 
         </table>
@@ -1436,11 +901,9 @@
   </div>
 
 
-
   <h2>
     名泰化學 - 桶槽即時監控
   </h2>
-
 
 
   <div class="tabs-container">
@@ -1490,7 +953,6 @@
   </div>
 
 
-
   <div
     id="dashboard"
     class="grid-container"
@@ -1498,14 +960,9 @@
   </div>
 
 
-
-  <script
-    src="/socket.io/socket.io.js"
-  ></script>
-
+  <script src="/socket.io/socket.io.js"></script>
 
   <script>
-
 
     // ==========================================
     // 基本變數
@@ -1513,191 +970,18 @@
 
     let socket = null;
 
-
     const IDLE_TIMEOUT =
       30 * 60 * 1000;
-
 
     let countdownInterval =
       null;
 
+    // 現在改成由 PostgreSQL /api/config 載入
+    let tankConfig = [];
 
-    const vendorList = [
-
-      "台塑食",
-      "台塑工",
-      "東南",
-      "中華化學",
-      "華夏",
-      "台紙",
-      "義芳",
-      "合禮",
-      "貝民",
-      "西一",
-      "進口",
-      "晴揚",
-      "元成",
-      "其他"
-
-    ];
-
-
-
-    const tankConfig = [
-
-      {
-        tankNo: "TK-01",
-        product: "液鹼 (45%)",
-        maxLevel: 60,
-        currentLevel: 0
-      },
-
-      {
-        tankNo: "TK-02",
-        product: "液鹼 (45%)",
-        maxLevel: 60,
-        currentLevel: 0
-      },
-
-      {
-        tankNo: "TK-37",
-        product: "液鹼45%",
-        maxLevel: 60,
-        currentLevel: 0
-      },
-
-      {
-        tankNo: "TK-45",
-        product: "液鹼45%",
-        maxLevel: 30,
-        currentLevel: 0
-      },
-
-      {
-        tankNo: "TK-06",
-        product: "鹽酸 (32%)",
-        maxLevel: 60,
-        currentLevel: 0
-      },
-
-      {
-        tankNo: "TK-07",
-        product: "鹽酸 (32%)",
-        maxLevel: 60,
-        currentLevel: 0
-      },
-
-      {
-        tankNo: "TK-08",
-        product: "鹽酸 (32%)",
-        maxLevel: 60,
-        currentLevel: 0
-      },
-
-      {
-        tankNo: "TK-09",
-        product: "鹽酸 (32%)",
-        maxLevel: 60,
-        currentLevel: 0
-      },
-
-      {
-        tankNo: "TK-13",
-        product: "鹽酸 (HCl)",
-        maxLevel: 90,
-        currentLevel: 0
-      },
-
-      {
-        tankNo: "TK-12",
-        product: "純水",
-        maxLevel: 90,
-        currentLevel: 0
-      },
-
-      {
-        tankNo: "TK-10",
-        product: "硝酸 (40%)",
-        maxLevel: 80,
-        currentLevel: 0
-      },
-
-      {
-        tankNo: "TK-41",
-        product: "硝酸 (55%)",
-        maxLevel: 30,
-        currentLevel: 0
-      },
-
-      {
-        tankNo: "TK-42",
-        product: "硝酸 (50%)",
-        maxLevel: 30,
-        currentLevel: 0
-      },
-
-      {
-        tankNo: "TK-03",
-        product: "硫酸 (50%)",
-        maxLevel: 60,
-        currentLevel: 0
-      },
-
-      {
-        tankNo: "TK-05",
-        product: "硫酸 (50%)",
-        maxLevel: 60,
-        currentLevel: 0
-      },
-
-      {
-        tankNo: "TK-11",
-        product: "硫酸 (50%)",
-        maxLevel: 80,
-        currentLevel: 0
-      },
-
-      {
-        tankNo: "TK-16",
-        product: "硫酸 (50%)",
-        maxLevel: 90,
-        currentLevel: 0
-      },
-
-      {
-        tankNo: "TK-39",
-        product: "BM硫酸 (60%)",
-        maxLevel: 60,
-        currentLevel: 0
-      },
-
-      {
-        tankNo: "TK-40",
-        product: "硫酸 (98%)",
-        maxLevel: 60,
-        currentLevel: 0
-      },
-
-      {
-        tankNo: "TK-38",
-        product: "氯化鐵",
-        maxLevel: 60,
-        currentLevel: 0
-      },
-
-      {
-        tankNo: "TK-15",
-        product: "碳酸鈉",
-        maxLevel: 60,
-        currentLevel: 0
-      }
-
-    ];
-
-
+    let vendorList = [];
 
     let tankVendorsData = {};
-
 
     const dashboard =
       document.getElementById(
@@ -1705,16 +989,90 @@
       );
 
 
-    const vendorOptionsHTML =
-      vendorList
-        .map(
-          vendor =>
-            `<option value="${vendor}">
-              ${vendor}
-            </option>`
-        )
-        .join("");
+    // ==========================================
+    // 讀取 PostgreSQL 系統設定
+    // ==========================================
 
+    async function loadSystemConfig(
+      token
+    ) {
+
+      const response =
+        await fetch(
+          '/api/config',
+          {
+            headers: {
+              Authorization:
+                `Bearer ${token}`
+            }
+          }
+        );
+
+
+      if (
+        response.status === 401
+      ) {
+
+        logout(
+          '登入已失效，請重新登入'
+        );
+
+        throw new Error(
+          '登入已失效'
+        );
+
+      }
+
+
+      const result =
+        await response.json();
+
+
+      if (
+        !response.ok ||
+        !result.success
+      ) {
+
+        throw new Error(
+          result.message ||
+          '讀取系統設定失敗'
+        );
+
+      }
+
+
+      tankConfig =
+        Array.isArray(
+          result.tanks
+        )
+          ? result.tanks.map(
+              tank => ({
+                ...tank,
+                currentLevel: 0
+              })
+            )
+          : [];
+
+
+      vendorList =
+        Array.isArray(
+          result.vendors
+        )
+          ? result.vendors.map(
+              vendor =>
+                vendor.vendorName
+            )
+          : [];
+
+
+      tankVendorsData = {};
+
+
+      initDashboard();
+
+      initHistoryTankFilter();
+
+    }
 
 
     // ==========================================
@@ -1722,7 +1080,6 @@
     // ==========================================
 
     async function checkLogin() {
-
 
       const user =
         document
@@ -1760,41 +1117,33 @@
           'block';
 
         return;
-
       }
 
 
       try {
 
-
         const response =
           await fetch(
             '/api/login',
             {
-
               method:
                 'POST',
 
               headers: {
-
                 'Content-Type':
                   'application/json'
-
               },
 
               body:
                 JSON.stringify(
                   {
-
                     username:
                       user,
 
                     password:
                       pass
-
                   }
                 )
-
             }
           );
 
@@ -1809,24 +1158,39 @@
           result.token
         ) {
 
-
           sessionStorage.setItem(
             'tank_token',
             result.token
           );
-
 
           sessionStorage.setItem(
             'tank_username',
             user
           );
 
-
           updateLastActivity();
+
+          errorMsg.textContent =
+            '系統設定載入中...';
+
+          errorMsg.style.color =
+            '#3498db';
+
+          errorMsg.style.display =
+            'block';
+
+
+          // 先從資料庫載入桶槽與廠商，再建立畫面
+          await loadSystemConfig(
+            result.token
+          );
 
 
           errorMsg.style.display =
             'none';
+
+          errorMsg.style.color =
+            '#e74c3c';
 
 
           document
@@ -1850,41 +1214,59 @@
 
           startCountdown();
 
-
         } else {
-
 
           errorMsg.textContent =
             '⚠️ 帳號或密碼錯誤';
 
+          errorMsg.style.color =
+            '#e74c3c';
 
           errorMsg.style.display =
             'block';
-
         }
-
 
       } catch (
         error
       ) {
-
 
         console.error(
           error
         );
 
 
-        errorMsg.textContent =
-          '⚠️ 無法連線至伺服器';
+        if (
+          !sessionStorage.getItem(
+            'tank_token'
+          )
+        ) {
+          return;
+        }
 
+
+        sessionStorage.removeItem(
+          'tank_token'
+        );
+
+        sessionStorage.removeItem(
+          'tank_username'
+        );
+
+        sessionStorage.removeItem(
+          'tank_last_activity'
+        );
+
+
+        errorMsg.textContent =
+          `⚠️ ${error.message || '無法讀取系統設定'}`;
+
+        errorMsg.style.color =
+          '#e74c3c';
 
         errorMsg.style.display =
           'block';
-
       }
-
     }
-
 
 
     function handleEnter(
@@ -1899,17 +1281,14 @@
         checkLogin();
 
       }
-
     }
-
 
 
     // ==========================================
     // 重新整理後恢復登入
     // ==========================================
 
-    function restoreLogin() {
-
+    async function restoreLogin() {
 
       const token =
         sessionStorage.getItem(
@@ -1934,9 +1313,7 @@
       if (
         !token
       ) {
-
         return;
-
       }
 
 
@@ -1949,7 +1326,6 @@
         );
 
         return;
-
       }
 
 
@@ -1972,33 +1348,61 @@
         );
 
         return;
-
       }
 
 
-      document
-        .getElementById(
-          'login-overlay'
-        )
-        .style
-        .display =
-        'none';
+      try {
+
+        // 先從 PostgreSQL 載入桶槽及廠商
+        await loadSystemConfig(
+          token
+        );
 
 
-      showTopStatus(
-        username
-      );
+        document
+          .getElementById(
+            'login-overlay'
+          )
+          .style
+          .display =
+          'none';
 
 
-      connectSocket(
-        token
-      );
+        showTopStatus(
+          username
+        );
 
 
-      startCountdown();
+        connectSocket(
+          token
+        );
 
+
+        startCountdown();
+
+      } catch (
+        error
+      ) {
+
+        console.error(
+          '恢復登入失敗:',
+          error
+        );
+
+
+        if (
+          sessionStorage.getItem(
+            'tank_token'
+          )
+        ) {
+
+          logout(
+            '系統設定讀取失敗，請重新登入'
+          );
+
+        }
+      }
     }
-
 
 
     // ==========================================
@@ -2009,27 +1413,20 @@
       token
     ) {
 
-
       if (
         socket
       ) {
-
         socket.disconnect();
-
       }
 
 
       socket =
         io(
           {
-
             auth: {
-
               token:
                 token
-
             }
-
           }
         );
 
@@ -2050,7 +1447,6 @@
         'connect_error',
         error => {
 
-
           console.error(
             'Socket連線失敗:',
             error.message
@@ -2058,21 +1454,17 @@
 
 
           if (
-
             error.message ===
               '未登入' ||
 
             error.message ===
               '登入已失效'
-
           ) {
 
             logout(
               '登入已失效，請重新登入'
             );
-
           }
-
         }
       );
 
@@ -2081,12 +1473,10 @@
         'init_data',
         serverState => {
 
-
           for (
             let tankNo
             in serverState
           ) {
-
 
             const data =
               serverState[
@@ -2095,21 +1485,13 @@
 
 
             applyChange(
-
               tankNo,
-
               data.level,
-
               data.vendors || [],
-
               data.timeStr || "",
-
               true
-
             );
-
           }
-
         }
       );
 
@@ -2118,26 +1500,35 @@
         'sync_tank',
         data => {
 
-
           applyChange(
-
             data.tankNo,
-
             data.level,
-
             data.vendors || [],
-
             data.timeStr || "",
-
             true
-
           );
-
         }
       );
 
-    }
 
+      // Server 驗證不通過時直接提示使用者
+      socket.on(
+        'tank_error',
+        data => {
+
+          const message =
+            data &&
+            data.message
+              ? data.message
+              : '資料更新失敗';
+
+
+          alert(
+            `⚠️ ${message}`
+          );
+        }
+      );
+    }
 
 
     // ==========================================
@@ -2146,33 +1537,23 @@
 
     function updateLastActivity() {
 
-
       if (
         !sessionStorage.getItem(
           'tank_token'
         )
       ) {
-
         return;
-
       }
 
 
       sessionStorage.setItem(
-
         'tank_last_activity',
-
-        Date.now()
-          .toString()
-
+        Date.now().toString()
       );
-
     }
 
 
-
     function startCountdown() {
-
 
       if (
         countdownInterval
@@ -2193,13 +1574,10 @@
           updateCountdownDisplay,
           1000
         );
-
     }
 
 
-
     function updateCountdownDisplay() {
-
 
       const token =
         sessionStorage.getItem(
@@ -2210,9 +1588,7 @@
       if (
         !token
       ) {
-
         return;
-
       }
 
 
@@ -2227,9 +1603,7 @@
       if (
         !lastActivity
       ) {
-
         return;
-
       }
 
 
@@ -2244,38 +1618,31 @@
 
 
       if (
-        remaining <=
-        0
+        remaining <= 0
       ) {
-
 
         logout(
           '已超過 30 分鐘未操作，請重新登入'
         );
 
-
         return;
-
       }
 
 
       const totalSeconds =
         Math.ceil(
-          remaining /
-          1000
+          remaining / 1000
         );
 
 
       const minutes =
         Math.floor(
-          totalSeconds /
-          60
+          totalSeconds / 60
         );
 
 
       const seconds =
-        totalSeconds %
-        60;
+        totalSeconds % 60;
 
 
       const timer =
@@ -2285,11 +1652,8 @@
 
 
       timer.textContent =
-
         `⏱ 閒置登出 ` +
-
         `${String(minutes).padStart(2,'0')}:` +
-
         `${String(seconds).padStart(2,'0')}`;
 
 
@@ -2307,11 +1671,8 @@
         timer.classList.remove(
           'warning'
         );
-
       }
-
     }
-
 
 
     // ==========================================
@@ -2320,25 +1681,18 @@
 
     function userActivity() {
 
-
       if (
         !sessionStorage.getItem(
           'tank_token'
         )
       ) {
-
         return;
-
       }
 
 
       updateLastActivity();
-
-
       updateCountdownDisplay();
-
     }
-
 
 
     [
@@ -2350,23 +1704,15 @@
     .forEach(
       eventName => {
 
-
         document.addEventListener(
-
           eventName,
-
           userActivity,
-
           {
             passive: true
           }
-
         );
-
-
       }
     );
-
 
 
     // ==========================================
@@ -2378,16 +1724,13 @@
       '登入已逾時，請重新登入'
     ) {
 
-
       sessionStorage.removeItem(
         'tank_token'
       );
 
-
       sessionStorage.removeItem(
         'tank_username'
       );
-
 
       sessionStorage.removeItem(
         'tank_last_activity'
@@ -2404,7 +1747,6 @@
 
         countdownInterval =
           null;
-
       }
 
 
@@ -2416,7 +1758,6 @@
 
         socket =
           null;
-
       }
 
 
@@ -2458,6 +1799,8 @@
       errorMsg.textContent =
         `⚠️ ${message}`;
 
+      errorMsg.style.color =
+        '#e74c3c';
 
       errorMsg.style.display =
         'block';
@@ -2470,26 +1813,20 @@
         .style
         .display =
         'flex';
-
     }
-
 
 
     function manualLogout() {
 
-
       logout(
         '您已登出'
       );
-
     }
-
 
 
     function showTopStatus(
       username
     ) {
-
 
       const topStatus =
         document.getElementById(
@@ -2507,9 +1844,7 @@
         )
         .textContent =
         `👤 ${username || ''}`;
-
     }
-
 
 
     // ==========================================
@@ -2520,15 +1855,12 @@
       productName
     ) {
 
-
       if (
         productName.includes(
           "硫酸"
         )
       ) {
-
         return "硫酸";
-
       }
 
 
@@ -2537,9 +1869,7 @@
           "鹽酸"
         )
       ) {
-
         return "鹽酸";
-
       }
 
 
@@ -2548,9 +1878,7 @@
           "硝酸"
         )
       ) {
-
         return "硝酸";
-
       }
 
 
@@ -2559,16 +1887,12 @@
           "液鹼"
         )
       ) {
-
         return "液鹼";
-
       }
 
 
       return "其它";
-
     }
-
 
 
     // ==========================================
@@ -2577,169 +1901,427 @@
 
     function initDashboard() {
 
-
       dashboard.innerHTML =
         "";
+
+
+      if (
+        tankConfig.length ===
+        0
+      ) {
+
+        const message =
+          document.createElement(
+            'div'
+          );
+
+        message.textContent =
+          '目前沒有啟用中的桶槽';
+
+        message.style.gridColumn =
+          '1 / -1';
+
+        message.style.textAlign =
+          'center';
+
+        message.style.color =
+          '#999';
+
+        message.style.padding =
+          '30px';
+
+        dashboard.appendChild(
+          message
+        );
+
+        return;
+      }
 
 
       tankConfig.forEach(
         tank => {
 
-
           tankVendorsData[
             tank.tankNo
-          ] =
-          [];
+          ] = [];
 
 
           const category =
+            tank.category ||
             getCategory(
               tank.product
             );
 
 
-          dashboard.innerHTML += `
+          const card =
+            document.createElement(
+              'div'
+            );
+
+          card.className =
+            'tank-card';
+
+          card.dataset.category =
+            category;
 
 
-            <div
-              class="tank-card"
-              data-category="${category}"
-            >
+          // -----------------------------
+          // 桶號
+          // -----------------------------
+
+          const tankNoEl =
+            document.createElement(
+              'div'
+            );
+
+          tankNoEl.className =
+            'tank-no';
+
+          tankNoEl.textContent =
+            tank.tankNo;
 
 
-              <div class="tank-no">
-                ${tank.tankNo}
-              </div>
+          // -----------------------------
+          // 品名
+          // -----------------------------
+
+          const productEl =
+            document.createElement(
+              'div'
+            );
+
+          productEl.className =
+            'product-name';
+
+          productEl.textContent =
+            tank.product;
 
 
-              <div class="product-name">
-                ${tank.product}
-              </div>
+          // -----------------------------
+          // 桶槽圖
+          // -----------------------------
+
+          const tankWrapper =
+            document.createElement(
+              'div'
+            );
+
+          tankWrapper.className =
+            'tank-wrapper';
 
 
-              <div class="tank-wrapper">
+          const tankStyle =
+            document.createElement(
+              'div'
+            );
 
-                <div class="tank-style">
-
-                  <div
-                    id="liquid_${tank.tankNo}"
-                    class="liquid-style"
-                    style="
-                      height:0%;
-                      background-color:#3498db;
-                    "
-                  >
-                  </div>
-
-                </div>
-
-              </div>
+          tankStyle.className =
+            'tank-style';
 
 
-              <div
-                id="info_${tank.tankNo}"
-                class="info-text"
-              >
+          const liquidEl =
+            document.createElement(
+              'div'
+            );
 
-                目前: 0 /
-                上限: ${tank.maxLevel}
-                (0.0%)
+          liquidEl.id =
+            `liquid_${tank.tankNo}`;
 
-              </div>
+          liquidEl.className =
+            'liquid-style';
 
+          liquidEl.style.height =
+            '0%';
 
-              <div class="vendor-section">
-
-
-                <div class="vendor-input-group">
-
-
-                  <select
-                    id="vendor_select_${tank.tankNo}"
-                  >
-
-                    <option
-                      value=""
-                      disabled
-                      selected
-                    >
-                      + 選擇進貨廠商
-                    </option>
-
-                    ${vendorOptionsHTML}
-
-                  </select>
+          liquidEl.style.backgroundColor =
+            '#3498db';
 
 
-                  <button
-                    onclick="addVendor('${tank.tankNo}')"
-                  >
-                    加入
-                  </button>
+          tankStyle.appendChild(
+            liquidEl
+          );
+
+          tankWrapper.appendChild(
+            tankStyle
+          );
 
 
-                </div>
+          // -----------------------------
+          // 液位資訊
+          // -----------------------------
+
+          const infoEl =
+            document.createElement(
+              'div'
+            );
+
+          infoEl.id =
+            `info_${tank.tankNo}`;
+
+          infoEl.className =
+            'info-text';
+
+          infoEl.textContent =
+            `目前: 0 / 上限: ${tank.maxLevel} (0.0%)`;
 
 
-                <div
-                  id="tags_${tank.tankNo}"
-                  class="vendor-tags"
-                >
+          // -----------------------------
+          // 廠商區
+          // -----------------------------
 
-                  <span
-                    class="empty-vendor"
-                  >
-                    目前無指定廠商
-                  </span>
+          const vendorSection =
+            document.createElement(
+              'div'
+            );
 
-                </div>
-
-
-              </div>
+          vendorSection.className =
+            'vendor-section';
 
 
-              <div
-                id="time_${tank.tankNo}"
-                class="time-text"
-              >
-                更新時間: 尚未設定
-              </div>
+          const vendorInputGroup =
+            document.createElement(
+              'div'
+            );
+
+          vendorInputGroup.className =
+            'vendor-input-group';
 
 
-              <div
-                class="card-controls"
-              >
+          const vendorSelect =
+            document.createElement(
+              'select'
+            );
+
+          vendorSelect.id =
+            `vendor_select_${tank.tankNo}`;
 
 
-                <input
-                  id="input_${tank.tankNo}"
-                  type="number"
-                  min="0"
-                  placeholder="輸入液位"
-                >
+          const defaultOption =
+            document.createElement(
+              'option'
+            );
+
+          defaultOption.value =
+            '';
+
+          defaultOption.disabled =
+            true;
+
+          defaultOption.selected =
+            true;
+
+          defaultOption.textContent =
+            '+ 選擇進貨廠商';
 
 
-                <button
-                  class="update-btn"
-                  onclick="confirmTankLevel('${tank.tankNo}')"
-                >
-                  確認更新
-                </button>
+          vendorSelect.appendChild(
+            defaultOption
+          );
 
 
-              </div>
+          vendorList.forEach(
+            vendorName => {
+
+              const option =
+                document.createElement(
+                  'option'
+                );
+
+              option.value =
+                vendorName;
+
+              option.textContent =
+                vendorName;
+
+              vendorSelect.appendChild(
+                option
+              );
+            }
+          );
 
 
-            </div>
+          const addButton =
+            document.createElement(
+              'button'
+            );
+
+          addButton.textContent =
+            '加入';
+
+          addButton.onclick =
+            () => {
+
+              addVendor(
+                tank.tankNo
+              );
+            };
 
 
-          `;
+          vendorInputGroup.appendChild(
+            vendorSelect
+          );
 
+          vendorInputGroup.appendChild(
+            addButton
+          );
+
+
+          const tagsEl =
+            document.createElement(
+              'div'
+            );
+
+          tagsEl.id =
+            `tags_${tank.tankNo}`;
+
+          tagsEl.className =
+            'vendor-tags';
+
+
+          const emptyVendor =
+            document.createElement(
+              'span'
+            );
+
+          emptyVendor.className =
+            'empty-vendor';
+
+          emptyVendor.textContent =
+            '目前無指定廠商';
+
+
+          tagsEl.appendChild(
+            emptyVendor
+          );
+
+
+          vendorSection.appendChild(
+            vendorInputGroup
+          );
+
+          vendorSection.appendChild(
+            tagsEl
+          );
+
+
+          // -----------------------------
+          // 更新時間
+          // -----------------------------
+
+          const timeEl =
+            document.createElement(
+              'div'
+            );
+
+          timeEl.id =
+            `time_${tank.tankNo}`;
+
+          timeEl.className =
+            'time-text';
+
+          timeEl.textContent =
+            '更新時間: 尚未設定';
+
+
+          // -----------------------------
+          // 液位輸入
+          // -----------------------------
+
+          const controls =
+            document.createElement(
+              'div'
+            );
+
+          controls.className =
+            'card-controls';
+
+
+          const levelInput =
+            document.createElement(
+              'input'
+            );
+
+          levelInput.id =
+            `input_${tank.tankNo}`;
+
+          levelInput.type =
+            'number';
+
+          levelInput.min =
+            '0';
+
+          levelInput.placeholder =
+            '輸入液位';
+
+
+          const updateButton =
+            document.createElement(
+              'button'
+            );
+
+          updateButton.className =
+            'update-btn';
+
+          updateButton.textContent =
+            '確認更新';
+
+          updateButton.onclick =
+            () => {
+
+              confirmTankLevel(
+                tank.tankNo
+              );
+            };
+
+
+          controls.appendChild(
+            levelInput
+          );
+
+          controls.appendChild(
+            updateButton
+          );
+
+
+          // -----------------------------
+          // 組合卡片
+          // -----------------------------
+
+          card.appendChild(
+            tankNoEl
+          );
+
+          card.appendChild(
+            productEl
+          );
+
+          card.appendChild(
+            tankWrapper
+          );
+
+          card.appendChild(
+            infoEl
+          );
+
+          card.appendChild(
+            vendorSection
+          );
+
+          card.appendChild(
+            timeEl
+          );
+
+          card.appendChild(
+            controls
+          );
+
+
+          dashboard.appendChild(
+            card
+          );
         }
       );
-
     }
-
 
 
     // ==========================================
@@ -2748,16 +2330,35 @@
 
     function initHistoryTankFilter() {
 
-
       const select =
         document.getElementById(
           'history-tank-filter'
         );
 
 
+      select.innerHTML =
+        '';
+
+
+      const allOption =
+        document.createElement(
+          'option'
+        );
+
+      allOption.value =
+        '';
+
+      allOption.textContent =
+        '全部桶槽';
+
+
+      select.appendChild(
+        allOption
+      );
+
+
       tankConfig.forEach(
         tank => {
-
 
           const option =
             document.createElement(
@@ -2776,12 +2377,9 @@
           select.appendChild(
             option
           );
-
         }
       );
-
     }
-
 
 
     // ==========================================
@@ -2792,14 +2390,12 @@
       selectedCategory
     ) {
 
-
       document
         .querySelectorAll(
           '.tab-btn'
         )
         .forEach(
           btn => {
-
 
             btn
               .classList
@@ -2813,15 +2409,12 @@
               selectedCategory
             ) {
 
-
               btn
                 .classList
                 .add(
                   'active'
                 );
-
             }
-
           }
         );
 
@@ -2833,7 +2426,6 @@
         .forEach(
           card => {
 
-
             const category =
               card.getAttribute(
                 'data-category'
@@ -2841,33 +2433,24 @@
 
 
             if (
-
               selectedCategory ===
                 '全部' ||
 
               category ===
                 selectedCategory
-
             ) {
-
 
               card.style.display =
                 'flex';
 
-
             } else {
-
 
               card.style.display =
                 'none';
-
             }
-
           }
         );
-
     }
-
 
 
     // ==========================================
@@ -2875,19 +2458,12 @@
     // ==========================================
 
     function applyChange(
-
       tankNo,
-
       newLevel,
-
       newVendors,
-
       timeStr,
-
       isFromRemote = false
-
     ) {
-
 
       const tank =
         tankConfig.find(
@@ -2897,12 +2473,12 @@
         );
 
 
+      // 如果 DB 裡有舊狀態，但該桶已停用，
+      // 前端不顯示，也不套用
       if (
         !tank
       ) {
-
         return;
-
       }
 
 
@@ -2911,18 +2487,14 @@
           newVendors
         )
       ) {
-
-        newVendors =
-          [];
-
+        newVendors = [];
       }
 
 
       tank.currentLevel =
         Number(
           newLevel
-        ) ||
-        0;
+        ) || 0;
 
 
       tankVendorsData[
@@ -2935,14 +2507,11 @@
 
       const displayLevel =
         Math.max(
-
           0,
-
           Math.min(
             tank.currentLevel,
             tank.maxLevel
           )
-
         );
 
 
@@ -2950,8 +2519,7 @@
         (
           displayLevel /
           tank.maxLevel
-        ) *
-        100;
+        ) * 100;
 
 
       const liquidEl =
@@ -2964,30 +2532,22 @@
         liquidEl
       ) {
 
-
         liquidEl.style.height =
           `${percentage}%`;
 
 
         liquidEl.style.backgroundColor =
-
-          percentage >=
-          85
-
-          ? "#e74c3c"
-
-          : "#3498db";
-
+          percentage >= 85
+            ? "#e74c3c"
+            : "#3498db";
       }
-
 
 
       const actualPercentage =
         (
           tank.currentLevel /
           tank.maxLevel
-        ) *
-        100;
+        ) * 100;
 
 
       const infoEl =
@@ -3000,13 +2560,9 @@
         infoEl
       ) {
 
-
         infoEl.textContent =
-
           `目前: ${tank.currentLevel} / ` +
-
           `上限: ${tank.maxLevel} ` +
-
           `(${actualPercentage.toFixed(1)}%)`;
 
 
@@ -3022,11 +2578,8 @@
 
           infoEl.style.color =
             '#333';
-
         }
-
       }
-
 
 
       const inputEl =
@@ -3040,25 +2593,17 @@
         isFromRemote
       ) {
 
-
         inputEl.value =
-
-          tank.currentLevel ===
-          0
-
-          ? ""
-
-          : tank.currentLevel;
-
+          tank.currentLevel === 0
+            ? ""
+            : tank.currentLevel;
       }
-
 
 
       renderVendorTags(
         tankNo,
         newVendors
       );
-
 
 
       const timeEl =
@@ -3071,34 +2616,22 @@
         timeEl
       ) {
 
-
         timeEl.textContent =
-
           timeStr
-
-          ? `最後更新: ${timeStr}`
-
-          : "更新時間: 尚未設定";
-
+            ? `最後更新: ${timeStr}`
+            : "更新時間: 尚未設定";
       }
 
 
-
       if (
-
         !isFromRemote &&
-
         socket &&
-
         socket.connected
-
       ) {
-
 
         socket.emit(
           'tank_changed',
           {
-
             tankNo:
               tankNo,
 
@@ -3110,14 +2643,10 @@
 
             timeStr:
               timeStr
-
           }
         );
-
       }
-
     }
-
 
 
     // ==========================================
@@ -3129,7 +2658,6 @@
       vendors
     ) {
 
-
       const container =
         document.getElementById(
           `tags_${tankNo}`
@@ -3139,9 +2667,7 @@
       if (
         !container
       ) {
-
         return;
-
       }
 
 
@@ -3150,10 +2676,8 @@
 
 
       if (
-        vendors.length ===
-        0
+        vendors.length === 0
       ) {
-
 
         const empty =
           document.createElement(
@@ -3173,9 +2697,7 @@
           empty
         );
 
-
         return;
-
       }
 
 
@@ -3184,7 +2706,6 @@
           vendorName,
           index
         ) => {
-
 
           const chip =
             document.createElement(
@@ -3227,7 +2748,6 @@
                 tankNo,
                 index
               );
-
             };
 
 
@@ -3244,12 +2764,9 @@
           container.appendChild(
             chip
           );
-
         }
       );
-
     }
-
 
 
     // ==========================================
@@ -3259,7 +2776,6 @@
     function confirmTankLevel(
       tankNo
     ) {
-
 
       const inputEl =
         document.getElementById(
@@ -3278,14 +2794,11 @@
         ""
       ) {
 
-
         alert(
           "請輸入液位"
         );
 
-
         return;
-
       }
 
 
@@ -3296,24 +2809,17 @@
 
 
       if (
-
         !Number.isFinite(
           newValue
         ) ||
-
-        newValue <
-        0
-
+        newValue < 0
       ) {
-
 
         alert(
           "請輸入正確液位"
         );
 
-
         return;
-
       }
 
 
@@ -3322,41 +2828,30 @@
           `確定將 ${tankNo} 液位更新為 ${newValue} 嗎？`
         )
       ) {
-
-
         return;
-
       }
 
 
       applyChange(
-
         tankNo,
-
         newValue,
-
         tankVendorsData[
           tankNo
         ],
-
         getNowString(),
-
         false
-
       );
-
     }
-
 
 
     // ==========================================
     // 廠商
+    // 允許同一廠商重複加入
     // ==========================================
 
     function addVendor(
       tankNo
     ) {
-
 
       const select =
         document.getElementById(
@@ -3367,9 +2862,7 @@
       if (
         !select.value
       ) {
-
         return;
-
       }
 
 
@@ -3389,34 +2882,25 @@
 
 
       applyChange(
-
         tankNo,
-
         tank.currentLevel,
-
         tankVendorsData[
           tankNo
         ],
-
         getNowString(),
-
         false
-
       );
 
 
       select.value =
         "";
-
     }
-
 
 
     function removeVendor(
       tankNo,
       index
     ) {
-
 
       tankVendorsData[
         tankNo
@@ -3435,23 +2919,15 @@
 
 
       applyChange(
-
         tankNo,
-
         tank.currentLevel,
-
         tankVendorsData[
           tankNo
         ],
-
         getNowString(),
-
         false
-
       );
-
     }
-
 
 
     // ==========================================
@@ -3459,7 +2935,6 @@
     // ==========================================
 
     function openHistory() {
-
 
       document
         .getElementById(
@@ -3471,13 +2946,10 @@
 
 
       loadHistory();
-
     }
 
 
-
     function closeHistory() {
-
 
       document
         .getElementById(
@@ -3486,13 +2958,10 @@
         .style
         .display =
         'none';
-
     }
 
 
-
     async function loadHistory() {
-
 
       const token =
         sessionStorage.getItem(
@@ -3509,7 +2978,6 @@
         );
 
         return;
-
       }
 
 
@@ -3559,25 +3027,19 @@
 
         url +=
           `&tankNo=${encodeURIComponent(tankNo)}`;
-
       }
 
 
       try {
 
-
         const response =
           await fetch(
             url,
             {
-
               headers: {
-
                 'Authorization':
                   `Bearer ${token}`
-
               }
-
             }
           );
 
@@ -3587,14 +3049,11 @@
           401
         ) {
 
-
           logout(
             '登入已失效，請重新登入'
           );
 
-
           return;
-
         }
 
 
@@ -3607,12 +3066,10 @@
           !result.success
         ) {
 
-
           throw new Error(
             result.message ||
             '讀取失敗'
           );
-
         }
 
 
@@ -3624,11 +3081,9 @@
         statusEl.textContent =
           `共載入 ${result.history.length} 筆紀錄`;
 
-
       } catch (
         error
       ) {
-
 
         console.error(
           error
@@ -3637,17 +3092,13 @@
 
         statusEl.textContent =
           '❌ 操作紀錄讀取失敗';
-
       }
-
     }
-
 
 
     function renderHistory(
       history
     ) {
-
 
       const bodyEl =
         document.getElementById(
@@ -3660,10 +3111,8 @@
 
 
       if (
-        history.length ===
-        0
+        history.length === 0
       ) {
-
 
         const row =
           document.createElement(
@@ -3706,15 +3155,12 @@
           row
         );
 
-
         return;
-
       }
 
 
       history.forEach(
         record => {
-
 
           const row =
             document.createElement(
@@ -3789,12 +3235,148 @@
           bodyEl.appendChild(
             row
           );
+        }
+      );
+    }
 
+
+    // ==========================================
+    // 重複廠商也能正確計算差異
+    // ==========================================
+
+    function countItems(
+      array
+    ) {
+
+      const counts =
+        new Map();
+
+
+      array.forEach(
+        item => {
+
+          counts.set(
+            item,
+            (
+              counts.get(
+                item
+              ) || 0
+            ) + 1
+          );
         }
       );
 
+
+      return counts;
     }
 
+
+    function getVendorDiff(
+      oldVendors,
+      newVendors
+    ) {
+
+      const oldCounts =
+        countItems(
+          oldVendors
+        );
+
+
+      const newCounts =
+        countItems(
+          newVendors
+        );
+
+
+      const added = [];
+      const removed = [];
+
+
+      const allNames =
+        new Set([
+          ...oldCounts.keys(),
+          ...newCounts.keys()
+        ]);
+
+
+      allNames.forEach(
+        name => {
+
+          const oldCount =
+            oldCounts.get(
+              name
+            ) || 0;
+
+
+          const newCount =
+            newCounts.get(
+              name
+            ) || 0;
+
+
+          if (
+            newCount >
+            oldCount
+          ) {
+
+            added.push({
+              name:
+                name,
+
+              count:
+                newCount -
+                oldCount
+            });
+          }
+
+
+          if (
+            oldCount >
+            newCount
+          ) {
+
+            removed.push({
+              name:
+                name,
+
+              count:
+                oldCount -
+                newCount
+            });
+          }
+        }
+      );
+
+
+      return {
+        added,
+        removed
+      };
+    }
+
+
+    function formatVendorDiffItems(
+      items
+    ) {
+
+      return items
+        .map(
+          item => {
+
+            if (
+              item.count >
+              1
+            ) {
+
+              return `${item.name} ×${item.count}`;
+            }
+
+
+            return item.name;
+          }
+        )
+        .join('、');
+    }
 
 
     function renderChangeDetails(
@@ -3802,17 +3384,20 @@
       record
     ) {
 
-
       const oldLevel =
-        Number(
-          record.oldLevel
-        );
+        record.oldLevel === null
+          ? null
+          : Number(
+              record.oldLevel
+            );
 
 
       const newLevel =
-        Number(
-          record.newLevel
-        );
+        record.newLevel === null
+          ? null
+          : Number(
+              record.newLevel
+            );
 
 
       const oldVendors =
@@ -3840,7 +3425,6 @@
         newLevel
       ) {
 
-
         const levelLine =
           document.createElement(
             'div'
@@ -3852,7 +3436,7 @@
 
 
         levelLine.textContent =
-          `液位：${oldLevel} → ${newLevel}`;
+          `液位：${oldLevel ?? '-'} → ${newLevel ?? '-'}`;
 
 
         container.appendChild(
@@ -3862,33 +3446,20 @@
 
         hasChange =
           true;
-
       }
 
 
-      const added =
-        newVendors.filter(
-          vendor =>
-            !oldVendors.includes(
-              vendor
-            )
-        );
-
-
-      const removed =
-        oldVendors.filter(
-          vendor =>
-            !newVendors.includes(
-              vendor
-            )
+      const diff =
+        getVendorDiff(
+          oldVendors,
+          newVendors
         );
 
 
       if (
-        added.length >
+        diff.added.length >
         0
       ) {
-
 
         const addLine =
           document.createElement(
@@ -3901,7 +3472,7 @@
 
 
         addLine.textContent =
-          `新增廠商：${added.join('、')}`;
+          `新增廠商：${formatVendorDiffItems(diff.added)}`;
 
 
         container.appendChild(
@@ -3911,15 +3482,13 @@
 
         hasChange =
           true;
-
       }
 
 
       if (
-        removed.length >
+        diff.removed.length >
         0
       ) {
-
 
         const removeLine =
           document.createElement(
@@ -3932,7 +3501,7 @@
 
 
         removeLine.textContent =
-          `移除廠商：${removed.join('、')}`;
+          `移除廠商：${formatVendorDiffItems(diff.removed)}`;
 
 
         container.appendChild(
@@ -3942,14 +3511,12 @@
 
         hasChange =
           true;
-
       }
 
 
       if (
         !hasChange
       ) {
-
 
         const noChange =
           document.createElement(
@@ -3962,17 +3529,14 @@
 
 
         noChange.textContent =
-          '狀態重新儲存';
+          '資料更新';
 
 
         container.appendChild(
           noChange
         );
-
       }
-
     }
-
 
 
     // ==========================================
@@ -3983,13 +3547,10 @@
       value
     ) {
 
-
       if (
         !value
       ) {
-
         return '';
-
       }
 
 
@@ -4004,16 +3565,13 @@
           date.getTime()
         )
       ) {
-
         return value;
-
       }
 
 
       return new Intl.DateTimeFormat(
         'zh-TW',
         {
-
           timeZone:
             'Asia/Taipei',
 
@@ -4037,46 +3595,40 @@
 
           hour12:
             false
-
         }
       )
       .format(
         date
       );
-
     }
-
 
 
     // ==========================================
     // 現在時間
+    // Server 目前已改成自己產生時間，
+    // 這裡保留只是為了相容前端資料結構
     // ==========================================
 
     function getNowString() {
-
 
       const now =
         new Date();
 
 
       return (
-
         `${now.getFullYear()}/` +
-
         `${String(
           now.getMonth() + 1
         ).padStart(
           2,
           '0'
         )}/` +
-
         `${String(
           now.getDate()
         ).padStart(
           2,
           '0'
         )} ` +
-
         now.toLocaleTimeString(
           'zh-TW',
           {
@@ -4084,11 +3636,8 @@
               false
           }
         )
-
       );
-
     }
-
 
 
     // ==========================================
@@ -4105,37 +3654,45 @@
           event
         ) {
 
-
           if (
             event.target ===
             this
           ) {
 
-
             closeHistory();
-
           }
-
         }
       );
 
 
+    // ==========================================
+    // ESC 關閉操作紀錄
+    // ==========================================
+
+    document.addEventListener(
+      'keydown',
+      event => {
+
+        if (
+          event.key ===
+          'Escape'
+        ) {
+
+          closeHistory();
+        }
+      }
+    );
+
 
     // ==========================================
     // 啟動
+    // 不再直接 initDashboard()
+    // 必須登入後先讀取 /api/config
     // ==========================================
-
-    initDashboard();
-
-
-    initHistoryTankFilter();
-
 
     restoreLogin();
 
-
   </script>
-
 
 </body>
 
