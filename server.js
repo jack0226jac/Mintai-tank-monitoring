@@ -11,7 +11,42 @@ const io = new Server(server);
 app.set('trust proxy', 1);
 
 app.use(express.json());
-app.use(express.static('public'));
+
+app.use(
+    express.static(
+        'public',
+        {
+            setHeaders:
+                (
+                    res,
+                    filePath
+                ) => {
+
+                    if (
+                        filePath.endsWith(
+                            '.html'
+                        )
+                    ) {
+
+                        res.setHeader(
+                            'Cache-Control',
+                            'no-store, no-cache, must-revalidate, proxy-revalidate'
+                        );
+
+                        res.setHeader(
+                            'Pragma',
+                            'no-cache'
+                        );
+
+                        res.setHeader(
+                            'Expires',
+                            '0'
+                        );
+                    }
+                }
+        }
+    )
+);
 
 
 // =====================================================
@@ -1182,8 +1217,14 @@ app.post(
                 .status(429)
                 .json({
                     success: false,
+                    code: 'LOGIN_BLOCKED',
+                    remainingAttempts: 0,
+                    maxAttempts:
+                        LOGIN_MAX_FAILURES,
+                    retryAfterSeconds:
+                        remainingSeconds,
                     message:
-                        '登入失敗次數過多，請稍後再試'
+                        `登入失敗次數過多，請 ${Math.ceil(remainingSeconds / 60)} 分鐘後再試`
                 });
         }
 
@@ -1255,6 +1296,14 @@ app.post(
             .status(401)
             .json({
                 success: false,
+                code:
+                    remainingAttempts > 0
+                        ? 'LOGIN_FAILED'
+                        : 'LOGIN_BLOCKED',
+                remainingAttempts:
+                    remainingAttempts,
+                maxAttempts:
+                    LOGIN_MAX_FAILURES,
                 message:
                     remainingAttempts > 0
                         ? `帳號或密碼錯誤，剩餘嘗試次數 ${remainingAttempts}`
