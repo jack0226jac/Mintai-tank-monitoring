@@ -1004,7 +1004,7 @@
       <div
         style="margin-top:10px;font-size:10px;color:#aaa;text-align:center;"
       >
-        系統版本：Security 2026-09-12B
+        系統版本：v1.4.0（2026-09-13）
       </div>
 
     </div>
@@ -2065,9 +2065,110 @@
           applyChange(
             data.tankNo,
             data.level,
-            data.vendors || [],
+            tankVendorsData[
+              data.tankNo
+            ] || [],
             data.timeStr || "",
             true
+          );
+        }
+      );
+
+
+      socket.on(
+        'vendor_added',
+        record => {
+
+          if (
+            !record ||
+            !record.tankNo
+          ) {
+            return;
+          }
+
+
+          if (
+            !Array.isArray(
+              tankVendorsData[
+                record.tankNo
+              ]
+            )
+          ) {
+
+            tankVendorsData[
+              record.tankNo
+            ] = [];
+          }
+
+
+          tankVendorsData[
+            record.tankNo
+          ].push(
+            {
+              id:
+                Number(
+                  record.id
+                ),
+
+              vendorName:
+                record.vendorName,
+
+              addedBy:
+                record.addedBy,
+
+              addedAt:
+                record.addedAt
+            }
+          );
+
+
+          renderVendorTags(
+            record.tankNo,
+            tankVendorsData[
+              record.tankNo
+            ]
+          );
+        }
+      );
+
+
+      socket.on(
+        'vendor_removed',
+        record => {
+
+          if (
+            !record ||
+            !record.tankNo
+          ) {
+            return;
+          }
+
+
+          const current =
+            tankVendorsData[
+              record.tankNo
+            ] || [];
+
+
+          tankVendorsData[
+            record.tankNo
+          ] =
+            current.filter(
+              item =>
+                Number(
+                  item.id
+                ) !==
+                Number(
+                  record.id
+                )
+            );
+
+
+          renderVendorTags(
+            record.tankNo,
+            tankVendorsData[
+              record.tankNo
+            ]
           );
         }
       );
@@ -2765,7 +2866,7 @@
             'empty-vendor';
 
           emptyVendor.textContent =
-            '目前無指定廠商';
+            '今日目前無廠商紀錄';
 
 
           tagsEl.appendChild(
@@ -3078,9 +3179,41 @@
       tankVendorsData[
         tankNo
       ] =
-        [
-          ...newVendors
-        ];
+        newVendors.map(
+          item => {
+
+            if (
+              typeof item ===
+              'string'
+            ) {
+
+              return {
+                id:
+                  null,
+
+                vendorName:
+                  item
+              };
+            }
+
+
+            return {
+              id:
+                Number(
+                  item.id
+                ),
+
+              vendorName:
+                item.vendorName || '',
+
+              addedBy:
+                item.addedBy || '',
+
+              addedAt:
+                item.addedAt || null
+            };
+          }
+        );
 
 
       const displayLevel =
@@ -3216,9 +3349,6 @@
             level:
               tank.currentLevel,
 
-            vendors:
-              newVendors,
-
             timeStr:
               timeStr
           }
@@ -3242,9 +3372,7 @@
         );
 
 
-      if (
-        !container
-      ) {
+      if (!container) {
         return;
       }
 
@@ -3254,6 +3382,7 @@
 
 
       if (
+        !Array.isArray(vendors) ||
         vendors.length === 0
       ) {
 
@@ -3268,7 +3397,7 @@
 
 
         empty.textContent =
-          '目前無指定廠商';
+          '今日目前無廠商紀錄';
 
 
         container.appendChild(
@@ -3280,10 +3409,7 @@
 
 
       vendors.forEach(
-        (
-          vendorName,
-          index
-        ) => {
+        record => {
 
           const chip =
             document.createElement(
@@ -3302,7 +3428,7 @@
 
 
           text.textContent =
-            vendorName;
+            record.vendorName || '';
 
 
           const remove =
@@ -3324,7 +3450,7 @@
 
               removeVendor(
                 tankNo,
-                index
+                record.id
               );
             };
 
@@ -3423,8 +3549,9 @@
 
 
     // ==========================================
-    // 廠商
-    // 允許同一廠商重複加入
+    // 今日廠商紀錄
+    // 每次新增都是獨立一筆，可重複同一家廠商。
+    // 移除採軟刪除，真正結果由 Server 回傳後更新畫面。
     // ==========================================
 
     function addVendor(
@@ -3438,35 +3565,35 @@
 
 
       if (
+        !select ||
         !select.value
       ) {
         return;
       }
 
 
-      tankVendorsData[
-        tankNo
-      ].push(
-        select.value
-      );
+      if (
+        !socket ||
+        !socket.connected
+      ) {
 
-
-      const tank =
-        tankConfig.find(
-          t =>
-            t.tankNo ===
-            tankNo
+        alert(
+          '⚠️ 目前未連線，無法新增廠商紀錄'
         );
 
+        return;
+      }
 
-      applyChange(
-        tankNo,
-        tank.currentLevel,
-        tankVendorsData[
-          tankNo
-        ],
-        getNowString(),
-        false
+
+      socket.emit(
+        'vendor_add',
+        {
+          tankNo:
+            tankNo,
+
+          vendorName:
+            select.value
+        }
       );
 
 
@@ -3477,33 +3604,58 @@
 
     function removeVendor(
       tankNo,
-      index
+      recordId
     ) {
 
-      tankVendorsData[
-        tankNo
-      ].splice(
-        index,
-        1
-      );
+      if (
+        !Number.isInteger(
+          Number(
+            recordId
+          )
+        )
+      ) {
 
-
-      const tank =
-        tankConfig.find(
-          t =>
-            t.tankNo ===
-            tankNo
+        alert(
+          '⚠️ 此筆為舊版資料，無法直接移除；重新整理後即可正常使用'
         );
 
+        return;
+      }
 
-      applyChange(
-        tankNo,
-        tank.currentLevel,
-        tankVendorsData[
-          tankNo
-        ],
-        getNowString(),
-        false
+
+      if (
+        !confirm(
+          '確定移除這筆今日廠商紀錄嗎？'
+        )
+      ) {
+        return;
+      }
+
+
+      if (
+        !socket ||
+        !socket.connected
+      ) {
+
+        alert(
+          '⚠️ 目前未連線，無法移除廠商紀錄'
+        );
+
+        return;
+      }
+
+
+      socket.emit(
+        'vendor_remove',
+        {
+          tankNo:
+            tankNo,
+
+          recordId:
+            Number(
+              recordId
+            )
+        }
       );
     }
 
