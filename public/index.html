@@ -123,6 +123,34 @@
     }
 
 
+    .history-small-btn {
+
+      border: none;
+
+      background: #8e44ad;
+
+      color: white;
+
+      border-radius: 14px;
+
+      padding: 5px 9px;
+
+      font-size: 11px;
+
+      font-weight: bold;
+
+      cursor: pointer;
+
+    }
+
+
+    .history-small-btn:hover {
+
+      background: #71368a;
+
+    }
+
+
     .logout-small-btn {
 
       border: none;
@@ -718,6 +746,286 @@
     }
 
 
+    /* =========================================
+       操作紀錄視窗
+       ========================================= */
+
+    #history-overlay {
+
+      position: fixed;
+
+      top: 0;
+
+      left: 0;
+
+      width: 100%;
+
+      height: 100%;
+
+      background:
+        rgba(0,0,0,0.5);
+
+      z-index: 9000;
+
+      display: none;
+
+      justify-content: center;
+
+      align-items: center;
+
+      padding: 20px;
+
+    }
+
+
+    .history-panel {
+
+      background: white;
+
+      width: 95%;
+
+      max-width: 1100px;
+
+      max-height: 90vh;
+
+      border-radius: 12px;
+
+      display: flex;
+
+      flex-direction: column;
+
+      overflow: hidden;
+
+      box-shadow:
+        0 10px 40px
+        rgba(0,0,0,0.25);
+
+    }
+
+
+    .history-header {
+
+      display: flex;
+
+      justify-content: space-between;
+
+      align-items: center;
+
+      padding: 16px 20px;
+
+      border-bottom:
+        1px solid #ddd;
+
+      background: #fafafa;
+
+    }
+
+
+    .history-title {
+
+      font-size: 20px;
+
+      font-weight: bold;
+
+      color: #2c3e50;
+
+    }
+
+
+    .history-close {
+
+      border: none;
+
+      background: #e74c3c;
+
+      color: white;
+
+      width: 34px;
+
+      height: 34px;
+
+      border-radius: 50%;
+
+      font-size: 18px;
+
+      cursor: pointer;
+
+      font-weight: bold;
+
+    }
+
+
+    .history-controls {
+
+      padding: 12px 20px;
+
+      display: flex;
+
+      gap: 10px;
+
+      align-items: center;
+
+      flex-wrap: wrap;
+
+      border-bottom:
+        1px solid #eee;
+
+    }
+
+
+    .history-controls label {
+
+      font-size: 13px;
+
+      font-weight: bold;
+
+      color: #555;
+
+    }
+
+
+    .history-controls select {
+
+      padding: 7px 9px;
+
+      border:
+        1px solid #ccc;
+
+      border-radius: 6px;
+
+      background: white;
+
+    }
+
+
+    .history-refresh-btn {
+
+      border: none;
+
+      background: #3498db;
+
+      color: white;
+
+      padding: 8px 12px;
+
+      border-radius: 6px;
+
+      cursor: pointer;
+
+      font-weight: bold;
+
+    }
+
+
+    .history-status {
+
+      padding: 8px 20px;
+
+      font-size: 13px;
+
+      color: #7f8c8d;
+
+    }
+
+
+    .history-table-wrapper {
+
+      overflow: auto;
+
+      flex: 1;
+
+      padding: 0 20px 20px 20px;
+
+    }
+
+
+    .history-table {
+
+      width: 100%;
+
+      border-collapse: collapse;
+
+      min-width: 780px;
+
+    }
+
+
+    .history-table th {
+
+      position: sticky;
+
+      top: 0;
+
+      background: #34495e;
+
+      color: white;
+
+      padding: 10px;
+
+      font-size: 13px;
+
+      text-align: left;
+
+      z-index: 2;
+
+    }
+
+
+    .history-table td {
+
+      border-bottom:
+        1px solid #eee;
+
+      padding: 10px;
+
+      font-size: 13px;
+
+      vertical-align: top;
+
+    }
+
+
+    .history-table tr:nth-child(even) {
+
+      background: #fafafa;
+
+    }
+
+
+    .change-level {
+
+      font-weight: bold;
+
+      color: #2980b9;
+
+    }
+
+
+    .vendor-added {
+
+      color: #16a085;
+
+      font-weight: bold;
+
+    }
+
+
+    .vendor-removed {
+
+      color: #c0392b;
+
+      font-weight: bold;
+
+    }
+
+
+    .no-change {
+
+      color: #95a5a6;
+
+    }
+
+
     @media (
       max-width: 768px
     ) {
@@ -741,6 +1049,20 @@
         justify-content: center;
 
         border-radius: 12px;
+
+        gap: 5px;
+
+        font-size: 11px;
+
+      }
+
+
+      .history-small-btn,
+      .logout-small-btn {
+
+        font-size: 10px;
+
+        padding: 5px 7px;
 
       }
 
@@ -814,6 +1136,51 @@
 
       }
 
+
+      #history-overlay {
+
+        padding: 8px;
+
+      }
+
+
+      .history-panel {
+
+        width: 100%;
+
+        max-height: 94vh;
+
+      }
+
+
+      .history-header {
+
+        padding: 12px;
+
+      }
+
+
+      .history-title {
+
+        font-size: 17px;
+
+      }
+
+
+      .history-controls {
+
+        padding: 10px;
+
+      }
+
+
+      .history-table-wrapper {
+
+        padding:
+          0 10px 10px 10px;
+
+      }
+
     }
 
   </style>
@@ -842,6 +1209,13 @@
     </span>
 
     <button
+      class="history-small-btn"
+      onclick="openHistory()"
+    >
+      📋 紀錄
+    </button>
+
+    <button
       class="logout-small-btn"
       onclick="manualLogout()"
     >
@@ -859,19 +1233,14 @@
 
     <div class="login-card">
 
-
       <div class="login-logo">
 
         <div class="logo-text">
-
           ⬡ 名泰化學材料
-
         </div>
 
         <div class="logo-sub">
-
           Ming Tai Chemical Materials Co., Ltd.
-
         </div>
 
       </div>
@@ -920,9 +1289,7 @@
 
 
       <div id="login-error">
-
         帳號或密碼錯誤
-
       </div>
 
 
@@ -930,11 +1297,139 @@
         class="login-btn"
         onclick="checkLogin()"
       >
-
         登入
-
       </button>
 
+    </div>
+
+  </div>
+
+
+  <!-- ======================================
+       操作紀錄
+       ====================================== -->
+
+  <div id="history-overlay">
+
+    <div class="history-panel">
+
+      <div class="history-header">
+
+        <div class="history-title">
+          📋 操作紀錄
+        </div>
+
+        <button
+          class="history-close"
+          onclick="closeHistory()"
+        >
+          ×
+        </button>
+
+      </div>
+
+
+      <div class="history-controls">
+
+        <label>
+          桶槽：
+        </label>
+
+        <select
+          id="history-tank-filter"
+          onchange="loadHistory()"
+        >
+          <option value="">
+            全部桶槽
+          </option>
+        </select>
+
+
+        <label>
+          顯示：
+        </label>
+
+        <select
+          id="history-limit"
+          onchange="loadHistory()"
+        >
+
+          <option value="20">
+            最近 20 筆
+          </option>
+
+          <option
+            value="50"
+            selected
+          >
+            最近 50 筆
+          </option>
+
+          <option value="100">
+            最近 100 筆
+          </option>
+
+          <option value="200">
+            最近 200 筆
+          </option>
+
+        </select>
+
+
+        <button
+          class="history-refresh-btn"
+          onclick="loadHistory()"
+        >
+          🔄 重新整理
+        </button>
+
+      </div>
+
+
+      <div
+        id="history-status"
+        class="history-status"
+      >
+        尚未載入
+      </div>
+
+
+      <div class="history-table-wrapper">
+
+        <table class="history-table">
+
+          <thead>
+
+            <tr>
+
+              <th>
+                時間
+              </th>
+
+              <th>
+                帳號
+              </th>
+
+              <th>
+                桶槽
+              </th>
+
+              <th>
+                變更內容
+              </th>
+
+            </tr>
+
+          </thead>
+
+
+          <tbody id="history-body">
+
+          </tbody>
+
+        </table>
+
+      </div>
 
     </div>
 
@@ -943,9 +1438,7 @@
 
 
   <h2>
-
     名泰化學 - 桶槽即時監控
-
   </h2>
 
 
@@ -1329,11 +1822,6 @@
           );
 
 
-          /*
-             登入成功時，
-             記錄最後操作時間
-          */
-
           updateLastActivity();
 
 
@@ -1373,7 +1861,6 @@
           errorMsg.style.display =
             'block';
 
-
         }
 
 
@@ -1393,7 +1880,6 @@
 
         errorMsg.style.display =
           'block';
-
 
       }
 
@@ -1454,11 +1940,6 @@
       }
 
 
-      /*
-         如果沒有最後操作時間，
-         視為需要重新登入
-      */
-
       if (
         !lastActivity
       ) {
@@ -1480,11 +1961,6 @@
         now -
         lastActivity;
 
-
-      /*
-         若重新整理時，
-         已經超過 30 分鐘
-      */
 
       if (
         elapsed >=
@@ -1767,10 +2243,6 @@
         elapsed;
 
 
-      /*
-         到 0 秒
-      */
-
       if (
         remaining <=
         0
@@ -1821,10 +2293,6 @@
         `${String(seconds).padStart(2,'0')}`;
 
 
-      /*
-         剩 5 分鐘變紅
-      */
-
       if (
         remaining <=
         5 * 60 * 1000
@@ -1847,15 +2315,11 @@
 
 
     // ==========================================
-    // 使用者有效操作
+    // 使用者操作
     // ==========================================
 
     function userActivity() {
 
-
-      /*
-         沒有登入就不計算
-      */
 
       if (
         !sessionStorage.getItem(
@@ -1876,11 +2340,6 @@
     }
 
 
-
-    /*
-       不使用 mousemove
-       避免滑鼠抖動造成永遠不登出
-    */
 
     [
       'mousedown',
@@ -1959,6 +2418,9 @@
           null;
 
       }
+
+
+      closeHistory();
 
 
       document
@@ -2146,24 +2608,18 @@
 
 
               <div class="tank-no">
-
                 ${tank.tankNo}
-
               </div>
 
 
               <div class="product-name">
-
                 ${tank.product}
-
               </div>
 
 
               <div class="tank-wrapper">
 
-
                 <div class="tank-style">
-
 
                   <div
                     id="liquid_${tank.tankNo}"
@@ -2175,9 +2631,7 @@
                   >
                   </div>
 
-
                 </div>
-
 
               </div>
 
@@ -2204,20 +2658,15 @@
                     id="vendor_select_${tank.tankNo}"
                   >
 
-
                     <option
                       value=""
                       disabled
                       selected
                     >
-
                       + 選擇進貨廠商
-
                     </option>
 
-
                     ${vendorOptionsHTML}
-
 
                   </select>
 
@@ -2225,9 +2674,7 @@
                   <button
                     onclick="addVendor('${tank.tankNo}')"
                   >
-
                     加入
-
                   </button>
 
 
@@ -2239,15 +2686,11 @@
                   class="vendor-tags"
                 >
 
-
                   <span
                     class="empty-vendor"
                   >
-
                     目前無指定廠商
-
                   </span>
-
 
                 </div>
 
@@ -2259,9 +2702,7 @@
                 id="time_${tank.tankNo}"
                 class="time-text"
               >
-
                 更新時間: 尚未設定
-
               </div>
 
 
@@ -2282,9 +2723,7 @@
                   class="update-btn"
                   onclick="confirmTankLevel('${tank.tankNo}')"
                 >
-
                   確認更新
-
                 </button>
 
 
@@ -2295,6 +2734,48 @@
 
 
           `;
+
+        }
+      );
+
+    }
+
+
+
+    // ==========================================
+    // 歷史桶槽選單
+    // ==========================================
+
+    function initHistoryTankFilter() {
+
+
+      const select =
+        document.getElementById(
+          'history-tank-filter'
+        );
+
+
+      tankConfig.forEach(
+        tank => {
+
+
+          const option =
+            document.createElement(
+              'option'
+            );
+
+
+          option.value =
+            tank.tankNo;
+
+
+          option.textContent =
+            `${tank.tankNo} - ${tank.product}`;
+
+
+          select.appendChild(
+            option
+          );
 
         }
       );
@@ -2379,7 +2860,6 @@
 
               card.style.display =
                 'none';
-
 
             }
 
@@ -2521,41 +3001,27 @@
       ) {
 
 
+        infoEl.textContent =
+
+          `目前: ${tank.currentLevel} / ` +
+
+          `上限: ${tank.maxLevel} ` +
+
+          `(${actualPercentage.toFixed(1)}%)`;
+
+
         if (
           tank.currentLevel >
           tank.maxLevel
         ) {
 
-
-          infoEl.innerHTML =
-
-            `目前:
-             <span style="color:red;">
-               ${tank.currentLevel}
-             </span>
-             /
-             上限:
-             ${tank.maxLevel}
-             (
-             <span style="color:red;">
-               ${actualPercentage.toFixed(1)}%
-             </span>
-             )`;
-
+          infoEl.style.color =
+            'red';
 
         } else {
 
-
-          infoEl.innerHTML =
-
-            `目前:
-             ${tank.currentLevel}
-             /
-             上限:
-             ${tank.maxLevel}
-             (
-             ${actualPercentage.toFixed(1)}%
-             )`;
+          infoEl.style.color =
+            '#333';
 
         }
 
@@ -2588,71 +3054,10 @@
 
 
 
-      const tagsContainer =
-        document.getElementById(
-          `tags_${tankNo}`
-        );
-
-
-      if (
-        tagsContainer
-      ) {
-
-
-        if (
-          newVendors.length ===
-          0
-        ) {
-
-
-          tagsContainer.innerHTML =
-
-            `<span class="empty-vendor">
-
-              目前無指定廠商
-
-            </span>`;
-
-
-        } else {
-
-
-          tagsContainer.innerHTML =
-
-            newVendors
-              .map(
-                (
-                  vendorName,
-                  index
-                ) => `
-
-
-                  <div class="vendor-chip">
-
-
-                    ${vendorName}
-
-
-                    <span
-                      class="remove-btn"
-                      onclick="removeVendor('${tankNo}', ${index})"
-                    >
-
-                      ✖
-
-                    </span>
-
-
-                  </div>
-
-
-                `
-              )
-              .join("");
-
-        }
-
-      }
+      renderVendorTags(
+        tankNo,
+        newVendors
+      );
 
 
 
@@ -2710,6 +3115,138 @@
         );
 
       }
+
+    }
+
+
+
+    // ==========================================
+    // 安全顯示廠商標籤
+    // ==========================================
+
+    function renderVendorTags(
+      tankNo,
+      vendors
+    ) {
+
+
+      const container =
+        document.getElementById(
+          `tags_${tankNo}`
+        );
+
+
+      if (
+        !container
+      ) {
+
+        return;
+
+      }
+
+
+      container.innerHTML =
+        '';
+
+
+      if (
+        vendors.length ===
+        0
+      ) {
+
+
+        const empty =
+          document.createElement(
+            'span'
+          );
+
+
+        empty.className =
+          'empty-vendor';
+
+
+        empty.textContent =
+          '目前無指定廠商';
+
+
+        container.appendChild(
+          empty
+        );
+
+
+        return;
+
+      }
+
+
+      vendors.forEach(
+        (
+          vendorName,
+          index
+        ) => {
+
+
+          const chip =
+            document.createElement(
+              'div'
+            );
+
+
+          chip.className =
+            'vendor-chip';
+
+
+          const text =
+            document.createElement(
+              'span'
+            );
+
+
+          text.textContent =
+            vendorName;
+
+
+          const remove =
+            document.createElement(
+              'span'
+            );
+
+
+          remove.className =
+            'remove-btn';
+
+
+          remove.textContent =
+            '✖';
+
+
+          remove.onclick =
+            () => {
+
+              removeVendor(
+                tankNo,
+                index
+              );
+
+            };
+
+
+          chip.appendChild(
+            text
+          );
+
+
+          chip.appendChild(
+            remove
+          );
+
+
+          container.appendChild(
+            chip
+          );
+
+        }
+      );
 
     }
 
@@ -2918,7 +3455,601 @@
 
 
     // ==========================================
-    // 時間
+    // 操作紀錄
+    // ==========================================
+
+    function openHistory() {
+
+
+      document
+        .getElementById(
+          'history-overlay'
+        )
+        .style
+        .display =
+        'flex';
+
+
+      loadHistory();
+
+    }
+
+
+
+    function closeHistory() {
+
+
+      document
+        .getElementById(
+          'history-overlay'
+        )
+        .style
+        .display =
+        'none';
+
+    }
+
+
+
+    async function loadHistory() {
+
+
+      const token =
+        sessionStorage.getItem(
+          'tank_token'
+        );
+
+
+      if (
+        !token
+      ) {
+
+        logout(
+          '請重新登入'
+        );
+
+        return;
+
+      }
+
+
+      const tankNo =
+        document
+          .getElementById(
+            'history-tank-filter'
+          )
+          .value;
+
+
+      const limit =
+        document
+          .getElementById(
+            'history-limit'
+          )
+          .value;
+
+
+      const statusEl =
+        document.getElementById(
+          'history-status'
+        );
+
+
+      const bodyEl =
+        document.getElementById(
+          'history-body'
+        );
+
+
+      statusEl.textContent =
+        '資料載入中...';
+
+
+      bodyEl.innerHTML =
+        '';
+
+
+      let url =
+        `/api/history?limit=${encodeURIComponent(limit)}`;
+
+
+      if (
+        tankNo
+      ) {
+
+        url +=
+          `&tankNo=${encodeURIComponent(tankNo)}`;
+
+      }
+
+
+      try {
+
+
+        const response =
+          await fetch(
+            url,
+            {
+
+              headers: {
+
+                'Authorization':
+                  `Bearer ${token}`
+
+              }
+
+            }
+          );
+
+
+        if (
+          response.status ===
+          401
+        ) {
+
+
+          logout(
+            '登入已失效，請重新登入'
+          );
+
+
+          return;
+
+        }
+
+
+        const result =
+          await response.json();
+
+
+        if (
+          !response.ok ||
+          !result.success
+        ) {
+
+
+          throw new Error(
+            result.message ||
+            '讀取失敗'
+          );
+
+        }
+
+
+        renderHistory(
+          result.history || []
+        );
+
+
+        statusEl.textContent =
+          `共載入 ${result.history.length} 筆紀錄`;
+
+
+      } catch (
+        error
+      ) {
+
+
+        console.error(
+          error
+        );
+
+
+        statusEl.textContent =
+          '❌ 操作紀錄讀取失敗';
+
+      }
+
+    }
+
+
+
+    function renderHistory(
+      history
+    ) {
+
+
+      const bodyEl =
+        document.getElementById(
+          'history-body'
+        );
+
+
+      bodyEl.innerHTML =
+        '';
+
+
+      if (
+        history.length ===
+        0
+      ) {
+
+
+        const row =
+          document.createElement(
+            'tr'
+          );
+
+
+        const cell =
+          document.createElement(
+            'td'
+          );
+
+
+        cell.colSpan =
+          4;
+
+
+        cell.textContent =
+          '目前沒有操作紀錄';
+
+
+        cell.style.textAlign =
+          'center';
+
+
+        cell.style.color =
+          '#999';
+
+
+        cell.style.padding =
+          '25px';
+
+
+        row.appendChild(
+          cell
+        );
+
+
+        bodyEl.appendChild(
+          row
+        );
+
+
+        return;
+
+      }
+
+
+      history.forEach(
+        record => {
+
+
+          const row =
+            document.createElement(
+              'tr'
+            );
+
+
+          const timeCell =
+            document.createElement(
+              'td'
+            );
+
+
+          timeCell.textContent =
+            formatTaipeiTime(
+              record.updatedAt
+            );
+
+
+          const userCell =
+            document.createElement(
+              'td'
+            );
+
+
+          userCell.textContent =
+            record.updatedBy || '';
+
+
+          const tankCell =
+            document.createElement(
+              'td'
+            );
+
+
+          tankCell.textContent =
+            record.tankNo || '';
+
+
+          const changeCell =
+            document.createElement(
+              'td'
+            );
+
+
+          renderChangeDetails(
+            changeCell,
+            record
+          );
+
+
+          row.appendChild(
+            timeCell
+          );
+
+
+          row.appendChild(
+            userCell
+          );
+
+
+          row.appendChild(
+            tankCell
+          );
+
+
+          row.appendChild(
+            changeCell
+          );
+
+
+          bodyEl.appendChild(
+            row
+          );
+
+        }
+      );
+
+    }
+
+
+
+    function renderChangeDetails(
+      container,
+      record
+    ) {
+
+
+      const oldLevel =
+        Number(
+          record.oldLevel
+        );
+
+
+      const newLevel =
+        Number(
+          record.newLevel
+        );
+
+
+      const oldVendors =
+        Array.isArray(
+          record.oldVendors
+        )
+          ? record.oldVendors
+          : [];
+
+
+      const newVendors =
+        Array.isArray(
+          record.newVendors
+        )
+          ? record.newVendors
+          : [];
+
+
+      let hasChange =
+        false;
+
+
+      if (
+        oldLevel !==
+        newLevel
+      ) {
+
+
+        const levelLine =
+          document.createElement(
+            'div'
+          );
+
+
+        levelLine.className =
+          'change-level';
+
+
+        levelLine.textContent =
+          `液位：${oldLevel} → ${newLevel}`;
+
+
+        container.appendChild(
+          levelLine
+        );
+
+
+        hasChange =
+          true;
+
+      }
+
+
+      const added =
+        newVendors.filter(
+          vendor =>
+            !oldVendors.includes(
+              vendor
+            )
+        );
+
+
+      const removed =
+        oldVendors.filter(
+          vendor =>
+            !newVendors.includes(
+              vendor
+            )
+        );
+
+
+      if (
+        added.length >
+        0
+      ) {
+
+
+        const addLine =
+          document.createElement(
+            'div'
+          );
+
+
+        addLine.className =
+          'vendor-added';
+
+
+        addLine.textContent =
+          `新增廠商：${added.join('、')}`;
+
+
+        container.appendChild(
+          addLine
+        );
+
+
+        hasChange =
+          true;
+
+      }
+
+
+      if (
+        removed.length >
+        0
+      ) {
+
+
+        const removeLine =
+          document.createElement(
+            'div'
+          );
+
+
+        removeLine.className =
+          'vendor-removed';
+
+
+        removeLine.textContent =
+          `移除廠商：${removed.join('、')}`;
+
+
+        container.appendChild(
+          removeLine
+        );
+
+
+        hasChange =
+          true;
+
+      }
+
+
+      if (
+        !hasChange
+      ) {
+
+
+        const noChange =
+          document.createElement(
+            'div'
+          );
+
+
+        noChange.className =
+          'no-change';
+
+
+        noChange.textContent =
+          '狀態重新儲存';
+
+
+        container.appendChild(
+          noChange
+        );
+
+      }
+
+    }
+
+
+
+    // ==========================================
+    // 台灣時間
+    // ==========================================
+
+    function formatTaipeiTime(
+      value
+    ) {
+
+
+      if (
+        !value
+      ) {
+
+        return '';
+
+      }
+
+
+      const date =
+        new Date(
+          value
+        );
+
+
+      if (
+        Number.isNaN(
+          date.getTime()
+        )
+      ) {
+
+        return value;
+
+      }
+
+
+      return new Intl.DateTimeFormat(
+        'zh-TW',
+        {
+
+          timeZone:
+            'Asia/Taipei',
+
+          year:
+            'numeric',
+
+          month:
+            '2-digit',
+
+          day:
+            '2-digit',
+
+          hour:
+            '2-digit',
+
+          minute:
+            '2-digit',
+
+          second:
+            '2-digit',
+
+          hour12:
+            false
+
+        }
+      )
+      .format(
+        date
+      );
+
+    }
+
+
+
+    // ==========================================
+    // 現在時間
     // ==========================================
 
     function getNowString() {
@@ -2961,10 +4092,43 @@
 
 
     // ==========================================
+    // 點背景關閉操作紀錄
+    // ==========================================
+
+    document
+      .getElementById(
+        'history-overlay'
+      )
+      .addEventListener(
+        'click',
+        function(
+          event
+        ) {
+
+
+          if (
+            event.target ===
+            this
+          ) {
+
+
+            closeHistory();
+
+          }
+
+        }
+      );
+
+
+
+    // ==========================================
     // 啟動
     // ==========================================
 
     initDashboard();
+
+
+    initHistoryTankFilter();
 
 
     restoreLogin();
