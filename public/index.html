@@ -1271,7 +1271,7 @@
       <div
         style="margin-top:10px;font-size:10px;color:#aaa;text-align:center;"
       >
-        系統版本：v1.6.6（2026-09-14）
+        系統版本：v1.6.8（2026-09-14）
       </div>
 
     </div>
@@ -1397,8 +1397,11 @@
                   <th>桶槽</th>
                   <th>品名</th>
                   <th>上限 m³</th>
-                  <th>密度 t/m³</th>
+                  <th>比重 t/m³</th>
                   <th>保留 m³</th>
+                  <th>進料方式</th>
+                  <th>原料濃度 %（可多種）</th>
+                  <th>目標濃度 %</th>
                   <th>分類</th>
                   <th>顯示順序</th>
                   <th>啟用</th>
@@ -1482,54 +1485,6 @@
             <button class="settings-save-btn" onclick="saveAllVendorMasters()">
               💾 儲存全部廠商設定
             </button>
-          </div>
-
-        </div>
-
-
-        <div class="settings-section">
-
-          <h3>🚛 供應廠商 / 進料換算設定</h3>
-          <p style="font-size:12px;color:#666;">
-            先選擇廠商，再一次設定多個桶槽。每個桶槽可選「直接進料」或「稀釋進料」；稀釋模式會把加水後的最終體積一起納入可進車數計算。
-          </p>
-
-          <div class="settings-form truck-batch-toolbar">
-            <div class="settings-field">
-              <label>廠商</label>
-              <select id="truck-config-vendor" onchange="renderVendorTruckBatchRows()"></select>
-            </div>
-            <div class="settings-field">
-              <label>批次車重 (t/車)</label>
-              <input id="truck-batch-capacity" type="number" min="0.01" step="0.01" placeholder="例：20">
-            </div>
-            <button class="settings-add-btn" onclick="applyBatchTruckCapacity()">↓ 套用至已勾選桶槽</button>
-          </div>
-
-          <div class="settings-table-wrap">
-            <table class="settings-table">
-              <thead>
-                <tr>
-                  <th>供應</th><th>桶槽</th><th>品名</th><th>進料方式</th><th>標準車重 t/車</th><th>原料濃度 %</th><th>目標濃度 %</th><th>最終比重 t/m³</th><th>每車換算</th>
-                </tr>
-              </thead>
-              <tbody id="admin-truck-batch-body"></tbody>
-            </table>
-          </div>
-
-          <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:14px;">
-            <button class="settings-save-btn" onclick="saveVendorTruckBatch()">
-              💾 儲存此廠商供應設定
-            </button>
-          </div>
-
-          <h4 style="margin:24px 0 8px;">📋 已設定進料資料</h4>
-          <p style="font-size:12px;color:#666;margin-top:0;">可在此確認所有已啟用的廠商／桶槽設定；按「✏️ 修改」會自動切換到該廠商並帶出既有資料。</p>
-          <div class="settings-table-wrap">
-            <table class="settings-table">
-              <thead><tr><th>廠商</th><th>桶槽</th><th>品名</th><th>進料方式</th><th>車重 t/車</th><th>原料濃度 %</th><th>目標濃度 %</th><th>比重 t/m³</th><th>操作</th></tr></thead>
-              <tbody id="admin-truck-config-overview-body"></tbody>
-            </table>
           </div>
 
         </div>
@@ -3554,35 +3509,32 @@
       const max = Number(tank.maxLevel || 0);
       const reserve = Math.max(0, Number(tank.safetyReserve || 0));
       const usableVolume = Math.max(0, max - current - reserve);
-      const configs = vendorTankConfigs.filter(item => item.tankNo === tankNo && item.enabled !== false);
+      const density = Number(tank.density);
 
-      let html = '<div class="capacity-title">🚚 可進料</div>';
-      if (!configs.length) {
-        html += '<div class="capacity-muted">尚未設定供應廠商</div>';
+      let html = '<div class="capacity-title">📦 可進料</div>';
+      if (!Number.isFinite(density) || density <= 0) {
+        html += '<div class="capacity-muted">尚未設定比重</div>';
         container.innerHTML = html;
         return;
       }
 
-      html += '<div class="capacity-vendors">';
-      for (const cfg of configs) {
-        const truckTon = Number(cfg.truckCapacityTon);
-        const density = Number(cfg.finalDensity || tank.density);
-        if (!Number.isFinite(truckTon) || truckTon <= 0 || !Number.isFinite(density) || density <= 0) continue;
-
-        let finalTon = truckTon;
-        if (cfg.feedMode === 'dilute') {
-          const raw = Number(cfg.rawConcentration);
-          const target = Number(cfg.targetConcentration);
-          if (!Number.isFinite(raw) || !Number.isFinite(target) || raw <= target || target <= 0) continue;
-          finalTon = truckTon * raw / target;
+      const productTons = usableVolume * density;
+      if ((tank.feedMode || 'direct') === 'dilute') {
+        const target = Number(tank.targetConcentration);
+        const raws = (Array.isArray(tank.rawConcentrations) && tank.rawConcentrations.length ? tank.rawConcentrations : (tank.rawConcentration != null ? [tank.rawConcentration] : []))
+          .map(Number).filter(v => Number.isFinite(v) && v > target && v <= 100).sort((a,b) => b-a);
+        if (!Number.isFinite(target) || target <= 0 || !raws.length) {
+          html += '<div class="capacity-muted">稀釋濃度尚未設定</div>';
+          container.innerHTML = html;
+          return;
         }
-
-        const volumePerTruck = finalTon / density;
-        if (!Number.isFinite(volumePerTruck) || volumePerTruck <= 0) continue;
-        const count = Math.max(0, Math.floor((usableVolume + 1e-9) / volumePerTruck));
-        html += `<div class="capacity-vendor-row"><span>${escapeHtml(cfg.vendorName)}</span><strong>${count} 車</strong></div>`;
+        raws.forEach(raw => {
+          const rawTons = productTons * target / raw;
+          html += `<div class="capacity-vendor-row"><span>${raw}% 原料</span><strong>${Math.max(0, rawTons).toFixed(1)} 噸</strong></div>`;
+        });
+      } else {
+        html += `<div class="capacity-vendor-row"><span>可進料</span><strong>${Math.max(0, productTons).toFixed(1)} 噸</strong></div>`;
       }
-      html += '</div>';
       container.innerHTML = html;
     }
 
@@ -5157,13 +5109,6 @@
           result.vendors || []
         );
 
-        renderTruckConfigAdmin(
-          result.tanks || [],
-          result.vendors || [],
-          result.truckConfigs || []
-        );
-
-
         await loadAdminHistory();
 
 
@@ -5337,6 +5282,29 @@
           reserveInput.value = tank.safetyReserve ?? 0;
           reserveCell.appendChild(reserveInput);
 
+          const feedModeCell = document.createElement('td');
+          const feedModeSelect = document.createElement('select');
+          feedModeSelect.className = 'tank-feed-mode-select';
+          feedModeSelect.innerHTML = '<option value="direct">直接進料</option><option value="dilute">稀釋進料</option>';
+          feedModeSelect.value = tank.feedMode || 'direct';
+          feedModeCell.appendChild(feedModeSelect);
+
+          const rawCell = document.createElement('td');
+          const rawInput = document.createElement('input');
+          rawInput.type='text'; rawInput.className='tank-raw-conc-input';
+          rawInput.value=(Array.isArray(tank.rawConcentrations) && tank.rawConcentrations.length ? tank.rawConcentrations : (tank.rawConcentration != null ? [tank.rawConcentration] : [])).join(', ');
+          rawInput.placeholder='例：68, 55';
+          rawInput.title='可輸入多種原料濃度，以逗號分隔，例如：68, 55';
+          rawCell.appendChild(rawInput);
+
+          const targetCell = document.createElement('td');
+          const targetInput = document.createElement('input');
+          targetInput.type='number'; targetInput.min='0.01'; targetInput.max='100'; targetInput.step='0.01'; targetInput.className='tank-target-conc-input'; targetInput.value=tank.targetConcentration ?? ''; targetInput.placeholder='例：40';
+          targetCell.appendChild(targetInput);
+
+          const updateFeedFields = () => { const d = feedModeSelect.value === 'dilute'; rawInput.disabled=!d; targetInput.disabled=!d; };
+          feedModeSelect.addEventListener('change', updateFeedFields); updateFeedFields();
+
 
           const categoryCell =
             document.createElement(
@@ -5439,6 +5407,9 @@
             maxCell,
             densityCell,
             reserveCell,
+            feedModeCell,
+            rawCell,
+            targetCell,
             categoryCell,
             sortCell,
             enabledCell
@@ -5890,6 +5861,12 @@
         const densityText = row.querySelector('.tank-density-input')?.value ?? '';
         const density = densityText === '' ? null : Number(densityText);
         const safetyReserve = Number(row.querySelector('.tank-reserve-input')?.value || 0);
+        const feedMode = row.querySelector('.tank-feed-mode-select')?.value || 'direct';
+        const rawText = row.querySelector('.tank-raw-conc-input')?.value ?? '';
+        const targetText = row.querySelector('.tank-target-conc-input')?.value ?? '';
+        const rawConcentrations = [...new Set(rawText.split(/[,，、\s]+/).map(v => Number(v)).filter(Number.isFinite))].sort((a,b) => b-a);
+        const rawConcentration = rawConcentrations[0] ?? null;
+        const targetConcentration = targetText === '' ? null : Number(targetText);
         const category = row.querySelector('.tank-category-select')?.value || '';
         const sortOrder = Number(row.querySelector('.tank-sort-input')?.value);
         const enabled = row.querySelector('.tank-enabled-input')?.checked === true;
@@ -5909,6 +5886,11 @@
           return;
         }
 
+        if (feedMode === 'dilute' && (!Number.isFinite(targetConcentration) || targetConcentration <= 0 || rawConcentrations.length < 1 || rawConcentrations.some(v => v <= targetConcentration || v > 100 || v <= 0))) {
+          alert(`⚠️ ${tankNo}：請輸入至少一種高於目標濃度的原料濃度，例如 68, 55`);
+          return;
+        }
+
         if (!Number.isInteger(sortOrder) || sortOrder < 0) {
           alert(`⚠️ ${tankNo}：顯示順序必須為 0 以上整數`);
           return;
@@ -5920,6 +5902,10 @@
           maxLevel,
           density,
           safetyReserve,
+          feedMode,
+          rawConcentration,
+          rawConcentrations,
+          targetConcentration,
           category,
           sortOrder,
           enabled
