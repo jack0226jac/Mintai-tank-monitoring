@@ -1124,6 +1124,27 @@
       }
     }
 
+  
+
+    /* v1.6.0：剩餘空間 / 可進車數 */
+    .capacity-panel {
+      margin-top: 10px;
+      padding: 10px;
+      border: 1px solid #dfe6e9;
+      border-radius: 10px;
+      background: #f8fafb;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .capacity-title { font-weight: 900; margin-bottom: 4px; }
+    .capacity-summary { font-weight: 800; }
+    .capacity-vendors { margin-top: 5px; }
+    .capacity-vendor-row { display:flex; justify-content:space-between; gap:8px; border-top:1px dashed #ddd; padding-top:3px; margin-top:3px; }
+    .capacity-warning { color:#c0392b; font-weight:900; }
+    .capacity-muted { color:#888; }
+    .truck-config-form { display:grid; grid-template-columns: 1fr 1.4fr 1fr auto; gap:8px; align-items:end; }
+    @media (max-width: 800px) { .truck-config-form { grid-template-columns: 1fr; } }
+
   </style>
 </head>
 
@@ -1247,7 +1268,7 @@
       <div
         style="margin-top:10px;font-size:10px;color:#aaa;text-align:center;"
       >
-        系統版本：v1.5.1（2026-09-14）
+        系統版本：v1.6.0（2026-09-14）
       </div>
 
     </div>
@@ -1324,6 +1345,16 @@
             </div>
 
             <div class="settings-field">
+              <label>密度 (t/m³)</label>
+              <input id="new-tank-density" type="number" min="0.001" step="0.001" placeholder="例：1.480">
+            </div>
+
+            <div class="settings-field">
+              <label>安全保留 (m³)</label>
+              <input id="new-tank-reserve" type="number" min="0" step="0.01" value="0">
+            </div>
+
+            <div class="settings-field">
               <label>分類</label>
               <select id="new-tank-category">
                 <option value="硫酸">硫酸</option>
@@ -1362,7 +1393,9 @@
                 <tr>
                   <th>桶槽</th>
                   <th>品名</th>
-                  <th>上限</th>
+                  <th>上限 m³</th>
+                  <th>密度 t/m³</th>
+                  <th>保留 m³</th>
                   <th>分類</th>
                   <th>排序</th>
                   <th>啟用</th>
@@ -1433,6 +1466,43 @@
 
             </table>
 
+          </div>
+
+        </div>
+
+
+        <div class="settings-section">
+
+          <h3>🚛 供應廠商 / 標準車重設定</h3>
+          <p style="font-size:12px;color:#666;">
+            只需建立「實際會供應該桶槽」的廠商。標準車重單位為噸/車。
+          </p>
+
+          <div class="settings-form truck-config-form">
+            <div class="settings-field">
+              <label>桶槽</label>
+              <select id="truck-config-tank"></select>
+            </div>
+            <div class="settings-field">
+              <label>廠商</label>
+              <select id="truck-config-vendor"></select>
+            </div>
+            <div class="settings-field">
+              <label>標準車重 (t/車)</label>
+              <input id="truck-config-capacity" type="number" min="0.01" step="0.01" placeholder="例：20">
+            </div>
+            <button class="settings-add-btn" onclick="saveNewTruckConfig()">＋ 新增 / 更新</button>
+          </div>
+
+          <div class="settings-table-wrap">
+            <table class="settings-table">
+              <thead>
+                <tr>
+                  <th>桶槽</th><th>廠商</th><th>車重 t/車</th><th>啟用</th><th>儲存</th>
+                </tr>
+              </thead>
+              <tbody id="admin-truck-config-body"></tbody>
+            </table>
           </div>
 
         </div>
@@ -1765,6 +1835,8 @@
 
     let vendorList = [];
 
+    let vendorTankConfigs = [];
+
     let tankVendorsData = {};
 
     const dashboard =
@@ -1905,6 +1977,11 @@
               vendor =>
                 vendor.vendorName
             )
+          : [];
+
+      vendorTankConfigs =
+        Array.isArray(result.truckConfigs)
+          ? result.truckConfigs
           : [];
 
 
@@ -3147,6 +3224,21 @@
             `目前: 0 / 上限: ${tank.maxLevel} (0.0%)`;
 
 
+          const capacityPanel =
+            document.createElement(
+              'div'
+            );
+
+          capacityPanel.id =
+            `capacity_${tank.tankNo}`;
+
+          capacityPanel.className =
+            'capacity-panel';
+
+          capacityPanel.innerHTML =
+            '<div class="capacity-muted">🚛 尚未設定密度／車重資料</div>';
+
+
           const vendorSection =
             document.createElement(
               'div'
@@ -3253,6 +3345,10 @@
           );
 
           card.appendChild(
+            capacityPanel
+          );
+
+          card.appendChild(
             vendorSection
           );
 
@@ -3267,6 +3363,10 @@
 
           dashboard.appendChild(
             card
+          );
+
+          renderTruckCapacity(
+            tank.tankNo
           );
         }
       );
@@ -3399,6 +3499,75 @@
             }
           }
         );
+    }
+
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+
+    // ==========================================
+    // 計算剩餘空間與各廠商可進車數
+    // 桶槽單位：m³；密度：t/m³；車重：t/車
+    // ==========================================
+
+    function renderTruckCapacity(tankNo) {
+
+      const tank = tankConfig.find(t => t.tankNo === tankNo);
+      const container = document.getElementById(`capacity_${tankNo}`);
+      if (!tank || !container) return;
+
+      const current = Number(tank.currentLevel || 0);
+      const max = Number(tank.maxLevel || 0);
+      const reserve = Math.max(0, Number(tank.safetyReserve || 0));
+      const density = tank.density === null || tank.density === undefined
+        ? null
+        : Number(tank.density);
+
+      const physicalRemaining = Math.max(0, max - current);
+      const usableVolume = Math.max(0, physicalRemaining - reserve);
+
+      const configs = vendorTankConfigs.filter(
+        item => item.tankNo === tankNo && item.enabled !== false
+      );
+
+      let html = '<div class="capacity-title">🚛 進料空間</div>';
+      html += `<div class="capacity-summary">剩餘體積：${physicalRemaining.toFixed(2)} m³</div>`;
+
+      if (reserve > 0) {
+        html += `<div>安全保留：${reserve.toFixed(2)} m³｜可用：${usableVolume.toFixed(2)} m³</div>`;
+      }
+
+      if (!Number.isFinite(density) || density <= 0) {
+        html += '<div class="capacity-warning">⚠️ 尚未設定密度，無法換算可進車數</div>';
+        container.innerHTML = html;
+        return;
+      }
+
+      const availableTon = usableVolume * density;
+      html += `<div>可容納重量：約 ${availableTon.toFixed(2)} t（密度 ${density.toFixed(3)} t/m³）</div>`;
+
+      if (!configs.length) {
+        html += '<div class="capacity-muted">尚未設定此桶槽的供應廠商與車重</div>';
+        container.innerHTML = html;
+        return;
+      }
+
+      html += '<div class="capacity-vendors">';
+      for (const cfg of configs) {
+        const truckTon = Number(cfg.truckCapacityTon);
+        if (!Number.isFinite(truckTon) || truckTon <= 0) continue;
+        const count = Math.max(0, Math.floor((availableTon + 1e-9) / truckTon));
+        html += `<div class="capacity-vendor-row"><span>${escapeHtml(cfg.vendorName)} ${truckTon.toFixed(1)}t/車</span><strong>${count} 車</strong></div>`;
+      }
+      html += '</div>';
+      container.innerHTML = html;
     }
 
 
@@ -3561,6 +3730,11 @@
             '#333';
         }
       }
+
+
+      renderTruckCapacity(
+        tankNo
+      );
 
 
       const inputEl =
@@ -4968,6 +5142,12 @@
           result.vendors || []
         );
 
+        renderTruckConfigAdmin(
+          result.tanks || [],
+          result.vendors || [],
+          result.truckConfigs || []
+        );
+
 
         await loadAdminHistory();
 
@@ -5117,6 +5297,23 @@
             maxInput
           );
 
+          const densityCell = document.createElement('td');
+          const densityInput = document.createElement('input');
+          densityInput.type = 'number';
+          densityInput.min = '0.001';
+          densityInput.step = '0.001';
+          densityInput.value = tank.density ?? '';
+          densityInput.placeholder = '未設定';
+          densityCell.appendChild(densityInput);
+
+          const reserveCell = document.createElement('td');
+          const reserveInput = document.createElement('input');
+          reserveInput.type = 'number';
+          reserveInput.min = '0';
+          reserveInput.step = '0.01';
+          reserveInput.value = tank.safetyReserve ?? 0;
+          reserveCell.appendChild(reserveInput);
+
 
           const categoryCell =
             document.createElement(
@@ -5239,6 +5436,12 @@
                       maxInput.value
                     ),
 
+                  density:
+                    densityInput.value === '' ? null : Number(densityInput.value),
+
+                  safetyReserve:
+                    Number(reserveInput.value || 0),
+
                   category:
                     categorySelect.value,
 
@@ -5263,6 +5466,8 @@
             tankCell,
             productCell,
             maxCell,
+            densityCell,
+            reserveCell,
             categoryCell,
             sortCell,
             enabledCell,
@@ -5457,6 +5662,74 @@
     }
 
 
+    function renderTruckConfigAdmin(tanks, vendors, configs) {
+      const tankSelect = document.getElementById('truck-config-tank');
+      const vendorSelect = document.getElementById('truck-config-vendor');
+      const body = document.getElementById('admin-truck-config-body');
+      if (!tankSelect || !vendorSelect || !body) return;
+
+      tankSelect.innerHTML = tanks.filter(t => t.enabled).map(
+        t => `<option value="${escapeHtml(t.tankNo)}">${escapeHtml(t.tankNo)} - ${escapeHtml(t.product)}</option>`
+      ).join('');
+      vendorSelect.innerHTML = vendors.filter(v => v.enabled).map(
+        v => `<option value="${v.id}">${escapeHtml(v.vendorName)}</option>`
+      ).join('');
+
+      body.innerHTML = '';
+      if (!configs.length) {
+        body.innerHTML = '<tr><td colspan="5">尚未建立供應廠商 / 車重設定</td></tr>';
+        return;
+      }
+
+      for (const cfg of configs) {
+        const row = document.createElement('tr');
+        const tankCell = document.createElement('td'); tankCell.textContent = cfg.tankNo;
+        const vendorCell = document.createElement('td'); vendorCell.textContent = cfg.vendorName;
+        const capCell = document.createElement('td');
+        const capInput = document.createElement('input');
+        capInput.type='number'; capInput.min='0.01'; capInput.step='0.01'; capInput.value=cfg.truckCapacityTon;
+        capCell.appendChild(capInput);
+        const enableCell = document.createElement('td');
+        const enable = document.createElement('input'); enable.type='checkbox'; enable.checked=cfg.enabled === true;
+        enableCell.appendChild(enable);
+        const saveCell = document.createElement('td');
+        const btn = document.createElement('button'); btn.className='settings-save-btn'; btn.textContent='儲存';
+        btn.onclick = async () => {
+          try {
+            const result = await adminRequest(`/api/admin/vendor-tank-config/${cfg.id}`, {
+              method:'PATCH',
+              body:JSON.stringify({truckCapacityTon:Number(capInput.value), enabled:enable.checked})
+            });
+            alert(`✅ ${result.message}`);
+            await refreshAfterAdminChange();
+          } catch (e) { alert(`⚠️ ${e.message}`); }
+        };
+        saveCell.appendChild(btn);
+        [tankCell,vendorCell,capCell,enableCell,saveCell].forEach(c=>row.appendChild(c));
+        body.appendChild(row);
+      }
+    }
+
+    async function saveNewTruckConfig() {
+      const tankNo = document.getElementById('truck-config-tank').value;
+      const vendorId = Number(document.getElementById('truck-config-vendor').value);
+      const truckCapacityTon = Number(document.getElementById('truck-config-capacity').value);
+      if (!tankNo || !vendorId || !Number.isFinite(truckCapacityTon) || truckCapacityTon <= 0) {
+        alert('⚠️ 請選擇桶槽、廠商並輸入正確的標準車重');
+        return;
+      }
+      try {
+        const result = await adminRequest('/api/admin/vendor-tank-config', {
+          method:'POST',
+          body:JSON.stringify({tankNo,vendorId,truckCapacityTon})
+        });
+        alert(`✅ ${result.message}`);
+        document.getElementById('truck-config-capacity').value='';
+        await refreshAfterAdminChange();
+      } catch (e) { alert(`⚠️ ${e.message}`); }
+    }
+
+
     async function addTankMaster() {
 
       const tankNo =
@@ -5486,6 +5759,10 @@
             .value
         );
 
+
+      const densityValue = document.getElementById('new-tank-density').value;
+      const density = densityValue === '' ? null : Number(densityValue);
+      const safetyReserve = Number(document.getElementById('new-tank-reserve').value || 0);
 
       const category =
         document
@@ -5543,6 +5820,8 @@
                   tankNo,
                   product,
                   maxLevel,
+                  density,
+                  safetyReserve,
                   category,
                   sortOrder
                 })
