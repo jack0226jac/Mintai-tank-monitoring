@@ -1143,7 +1143,10 @@
     .capacity-warning { color:#c0392b; font-weight:900; }
     .capacity-muted { color:#888; }
     .truck-config-form { display:grid; grid-template-columns: 1fr 1.4fr 1fr auto; gap:8px; align-items:end; }
-    @media (max-width: 800px) { .truck-config-form { grid-template-columns: 1fr; } }
+    .truck-batch-toolbar { display:grid; grid-template-columns: minmax(180px,1fr) minmax(150px,.8fr) auto; gap:8px; align-items:end; }
+    .truck-supply-check { transform:scale(1.15); }
+    .truck-batch-capacity-input { width:110px; }
+    @media (max-width: 800px) { .truck-config-form, .truck-batch-toolbar { grid-template-columns: 1fr; } }
 
   </style>
 </head>
@@ -1268,7 +1271,7 @@
       <div
         style="margin-top:10px;font-size:10px;color:#aaa;text-align:center;"
       >
-        系統版本：v1.6.3（2026-09-14）
+        系統版本：v1.6.4（2026-09-14）
       </div>
 
     </div>
@@ -1488,34 +1491,36 @@
 
           <h3>🚛 供應廠商 / 標準車重設定</h3>
           <p style="font-size:12px;color:#666;">
-            先選擇廠商，再設定該廠商實際可供應的桶槽與標準車重。標準車重單位為噸/車。
+            先選擇廠商，再一次勾選此廠商可供應的多個桶槽。可個別輸入車重，也可用批次車重一次套用至已勾選桶槽。
           </p>
 
-          <div class="settings-form truck-config-form">
+          <div class="settings-form truck-batch-toolbar">
             <div class="settings-field">
               <label>廠商</label>
-              <select id="truck-config-vendor"></select>
+              <select id="truck-config-vendor" onchange="renderVendorTruckBatchRows()"></select>
             </div>
             <div class="settings-field">
-              <label>桶槽</label>
-              <select id="truck-config-tank"></select>
+              <label>批次車重 (t/車)</label>
+              <input id="truck-batch-capacity" type="number" min="0.01" step="0.01" placeholder="例：20">
             </div>
-            <div class="settings-field">
-              <label>標準車重 (t/車)</label>
-              <input id="truck-config-capacity" type="number" min="0.01" step="0.01" placeholder="例：20">
-            </div>
-            <button class="settings-add-btn" onclick="saveNewTruckConfig()">＋ 新增 / 更新</button>
+            <button class="settings-add-btn" onclick="applyBatchTruckCapacity()">↓ 套用至已勾選桶槽</button>
           </div>
 
           <div class="settings-table-wrap">
             <table class="settings-table">
               <thead>
                 <tr>
-                  <th>廠商</th><th>桶槽</th><th>車重 t/車</th><th>啟用</th><th>儲存</th>
+                  <th>供應</th><th>桶槽</th><th>品名</th><th>標準車重 t/車</th>
                 </tr>
               </thead>
-              <tbody id="admin-truck-config-body"></tbody>
+              <tbody id="admin-truck-batch-body"></tbody>
             </table>
+          </div>
+
+          <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:14px;">
+            <button class="settings-save-btn" onclick="saveVendorTruckBatch()">
+              💾 儲存此廠商供應設定
+            </button>
           </div>
 
         </div>
@@ -5544,71 +5549,157 @@
       });
     }
 
-    function renderTruckConfigAdmin(tanks, vendors, configs) {
-      const tankSelect = document.getElementById('truck-config-tank');
-      const vendorSelect = document.getElementById('truck-config-vendor');
-      const body = document.getElementById('admin-truck-config-body');
-      if (!tankSelect || !vendorSelect || !body) return;
+    let adminTruckTanks = [];
+    let adminTruckConfigs = [];
 
-      vendorSelect.innerHTML = vendors.filter(v => v.enabled).map(
+    function renderTruckConfigAdmin(tanks, vendors, configs) {
+      const vendorSelect = document.getElementById('truck-config-vendor');
+      if (!vendorSelect) return;
+
+      const previousVendorId = Number(vendorSelect.value) || null;
+      adminTruckTanks = (tanks || []).filter(t => t.enabled);
+      adminTruckConfigs = Array.isArray(configs) ? configs : [];
+
+      const enabledVendors = (vendors || []).filter(v => v.enabled);
+      vendorSelect.innerHTML = enabledVendors.map(
         v => `<option value="${v.id}">${escapeHtml(v.vendorName)}</option>`
       ).join('');
-      tankSelect.innerHTML = tanks.filter(t => t.enabled).map(
-        t => `<option value="${escapeHtml(t.tankNo)}">${escapeHtml(t.tankNo)} - ${escapeHtml(t.product)}</option>`
-      ).join('');
 
-      body.innerHTML = '';
-      if (!configs.length) {
-        body.innerHTML = '<tr><td colspan="5">尚未建立供應廠商 / 車重設定</td></tr>';
-        return;
+      if (previousVendorId && enabledVendors.some(v => Number(v.id) === previousVendorId)) {
+        vendorSelect.value = String(previousVendorId);
       }
 
-      for (const cfg of configs) {
-        const row = document.createElement('tr');
-        const tankCell = document.createElement('td'); tankCell.textContent = cfg.tankNo;
-        const vendorCell = document.createElement('td'); vendorCell.textContent = cfg.vendorName;
-        const capCell = document.createElement('td');
-        const capInput = document.createElement('input');
-        capInput.type='number'; capInput.min='0.01'; capInput.step='0.01'; capInput.value=cfg.truckCapacityTon;
-        capCell.appendChild(capInput);
-        const enableCell = document.createElement('td');
-        const enable = document.createElement('input'); enable.type='checkbox'; enable.checked=cfg.enabled === true;
-        enableCell.appendChild(enable);
-        const saveCell = document.createElement('td');
-        const btn = document.createElement('button'); btn.className='settings-save-btn'; btn.textContent='儲存';
-        btn.onclick = async () => {
-          try {
-            const result = await adminRequest(`/api/admin/vendor-tank-config/${cfg.id}`, {
-              method:'PATCH',
-              body:JSON.stringify({truckCapacityTon:Number(capInput.value), enabled:enable.checked})
-            });
-            alert(`✅ ${result.message}`);
-            await refreshAfterAdminChange();
-          } catch (e) { alert(`⚠️ ${e.message}`); }
-        };
-        saveCell.appendChild(btn);
-        [vendorCell,tankCell,capCell,enableCell,saveCell].forEach(c=>row.appendChild(c));
-        body.appendChild(row);
-      }
+      renderVendorTruckBatchRows();
     }
 
-    async function saveNewTruckConfig() {
-      const tankNo = document.getElementById('truck-config-tank').value;
-      const vendorId = Number(document.getElementById('truck-config-vendor').value);
-      const truckCapacityTon = Number(document.getElementById('truck-config-capacity').value);
-      if (!tankNo || !vendorId || !Number.isFinite(truckCapacityTon) || truckCapacityTon <= 0) {
-        alert('⚠️ 請選擇廠商、桶槽並輸入正確的標準車重');
+    function renderVendorTruckBatchRows() {
+      const vendorSelect = document.getElementById('truck-config-vendor');
+      const body = document.getElementById('admin-truck-batch-body');
+      if (!vendorSelect || !body) return;
+
+      const vendorId = Number(vendorSelect.value);
+      body.innerHTML = '';
+
+      if (!vendorId) {
+        body.innerHTML = '<tr><td colspan="4">目前沒有可用廠商</td></tr>';
         return;
       }
+
+      if (!adminTruckTanks.length) {
+        body.innerHTML = '<tr><td colspan="4">目前沒有啟用中的桶槽</td></tr>';
+        return;
+      }
+
+      adminTruckTanks.forEach(tank => {
+        const cfg = adminTruckConfigs.find(c =>
+          Number(c.vendorId) === vendorId && c.tankNo === tank.tankNo
+        );
+
+        const row = document.createElement('tr');
+        row.dataset.tankNo = tank.tankNo;
+
+        const checkCell = document.createElement('td');
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = 'truck-supply-check';
+        checkbox.checked = !!(cfg && cfg.enabled === true);
+        checkbox.onchange = () => {
+          const input = row.querySelector('.truck-batch-capacity-input');
+          if (input) input.disabled = !checkbox.checked;
+        };
+        checkCell.appendChild(checkbox);
+
+        const tankCell = document.createElement('td');
+        tankCell.textContent = tank.tankNo;
+
+        const productCell = document.createElement('td');
+        productCell.textContent = tank.product;
+
+        const capCell = document.createElement('td');
+        const capInput = document.createElement('input');
+        capInput.type = 'number';
+        capInput.min = '0.01';
+        capInput.max = '100';
+        capInput.step = '0.01';
+        capInput.className = 'truck-batch-capacity-input';
+        capInput.placeholder = '例：20';
+        capInput.value = cfg ? cfg.truckCapacityTon : '';
+        capInput.disabled = !checkbox.checked;
+        capCell.appendChild(capInput);
+
+        [checkCell, tankCell, productCell, capCell].forEach(c => row.appendChild(c));
+        body.appendChild(row);
+      });
+    }
+
+    function applyBatchTruckCapacity() {
+      const value = Number(document.getElementById('truck-batch-capacity')?.value);
+      if (!Number.isFinite(value) || value <= 0 || value > 100) {
+        alert('⚠️ 請先輸入正確的批次車重（0.01～100 t/車）');
+        return;
+      }
+
+      const rows = Array.from(document.querySelectorAll('#admin-truck-batch-body tr[data-tank-no]'));
+      const checkedRows = rows.filter(row => row.querySelector('.truck-supply-check')?.checked);
+      if (!checkedRows.length) {
+        alert('⚠️ 請先勾選至少一個桶槽');
+        return;
+      }
+
+      checkedRows.forEach(row => {
+        const input = row.querySelector('.truck-batch-capacity-input');
+        if (input) input.value = value;
+      });
+    }
+
+    async function saveVendorTruckBatch() {
+      const vendorSelect = document.getElementById('truck-config-vendor');
+      const vendorId = Number(vendorSelect?.value);
+      const vendorName = vendorSelect?.selectedOptions?.[0]?.textContent || '';
+      if (!vendorId) {
+        alert('⚠️ 請先選擇廠商');
+        return;
+      }
+
+      const rows = Array.from(document.querySelectorAll('#admin-truck-batch-body tr[data-tank-no]'));
+      const tanks = [];
+
+      for (const row of rows) {
+        const enabled = row.querySelector('.truck-supply-check')?.checked === true;
+        const input = row.querySelector('.truck-batch-capacity-input');
+        const value = Number(input?.value);
+
+        if (enabled && (!Number.isFinite(value) || value <= 0 || value > 100)) {
+          alert(`⚠️ ${row.dataset.tankNo} 已勾選，請輸入正確車重（0.01～100 t/車）`);
+          input?.focus();
+          return;
+        }
+
+        tanks.push({
+          tankNo: row.dataset.tankNo,
+          enabled,
+          truckCapacityTon: enabled ? value : null
+        });
+      }
+
+      const enabledCount = tanks.filter(t => t.enabled).length;
+      if (!confirm(`確認儲存「${vendorName}」供應設定？\n\n已勾選 ${enabledCount} 個桶槽。\n未勾選的既有設定將停用。`)) return;
+
       try {
-        const result = await adminRequest('/api/admin/vendor-tank-config', {
-          method:'POST',
-          body:JSON.stringify({tankNo,vendorId,truckCapacityTon})
+        const result = await adminRequest('/api/admin/vendor-tank-config/batch', {
+          method: 'POST',
+          body: JSON.stringify({ vendorId, tanks })
         });
         alert(`✅ ${result.message}`);
-        document.getElementById('truck-config-capacity').value='';
         await refreshAfterAdminChange();
-      } catch (e) { alert(`⚠️ ${e.message}`); }
+        const select = document.getElementById('truck-config-vendor');
+        if (select && Array.from(select.options).some(o => Number(o.value) === vendorId)) {
+          select.value = String(vendorId);
+          renderVendorTruckBatchRows();
+        }
+      } catch (e) {
+        alert(`⚠️ ${e.message}`);
+      }
     }
 
 
