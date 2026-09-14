@@ -2778,6 +2778,99 @@ app.post(
 
 
 // =====================================================
+// 管理介面：批次修改廠商設定
+// 一次儲存顯示順序與啟用狀態；只更新有變更資料。
+// =====================================================
+app.post(
+    '/api/admin/vendors/batch-config',
+    verifyApiToken,
+    verifyAdmin,
+    async (req, res) => {
+        const vendors = Array.isArray(req.body.vendors) ? req.body.vendors : null;
+        if (!vendors || vendors.length === 0 || vendors.length > 500) {
+            return res.status(400).json({ success: false, message: '廠商批次資料格式錯誤' });
+        }
+
+        const validated = [];
+        const seen = new Set();
+        for (const item of vendors) {
+            const id = Number(item?.id);
+            const sortOrder = normalizeSortOrder(item?.sortOrder);
+            if (!Number.isInteger(id) || id <= 0) {
+                return res.status(400).json({ success: false, message: '廠商 ID 錯誤' });
+            }
+            if (sortOrder === null) {
+                return res.status(400).json({ success: false, message: '顯示順序必須是 0 到 10000 的整數' });
+            }
+            if (typeof item.enabled !== 'boolean') {
+                return res.status(400).json({ success: false, message: '廠商啟用狀態格式錯誤' });
+            }
+            if (seen.has(id)) {
+                return res.status(400).json({ success: false, message: `廠商 ID ${id} 重複出現` });
+            }
+            seen.add(id);
+            validated.push({ id, sortOrder, enabled: item.enabled });
+        }
+
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+            let changedCount = 0;
+
+            for (const item of validated) {
+                const oldResult = await client.query(
+                    `SELECT id, vendor_name, sort_order, enabled FROM vendor_master WHERE id = $1 FOR UPDATE`,
+                    [item.id]
+                );
+                if (oldResult.rows.length === 0) {
+                    throw new Error(`找不到廠商 ID ${item.id}`);
+                }
+                const oldData = oldResult.rows[0];
+                const isChanged = Number(oldData.sort_order) !== item.sortOrder || oldData.enabled !== item.enabled;
+                if (!isChanged) continue;
+
+                const result = await client.query(
+                    `UPDATE vendor_master
+                     SET sort_order = $2, enabled = $3, updated_at = NOW()
+                     WHERE id = $1
+                     RETURNING id, vendor_name, sort_order, enabled`,
+                    [item.id, item.sortOrder, item.enabled]
+                );
+                const newData = result.rows[0];
+                let actionType = 'UPDATE_VENDOR';
+                if (oldData.enabled === true && newData.enabled === false) actionType = 'DISABLE_VENDOR';
+                else if (oldData.enabled === false && newData.enabled === true) actionType = 'ENABLE_VENDOR';
+
+                await insertAdminHistory(client, {
+                    actionType,
+                    targetType: 'VENDOR',
+                    targetId: String(item.id),
+                    oldData,
+                    newData,
+                    username: req.user.username,
+                    ipAddress: getRequestIp(req)
+                });
+                changedCount += 1;
+            }
+
+            await client.query('COMMIT');
+            return res.json({
+                success: true,
+                changedCount,
+                message: changedCount > 0 ? `已更新 ${changedCount} 個廠商設定` : '沒有廠商設定需要更新'
+            });
+        } catch (error) {
+            await client.query('ROLLBACK');
+            console.error('❌ 批次修改廠商失敗:', error);
+            return res.status(500).json({ success: false, message: '批次儲存廠商設定失敗' });
+        } finally {
+            client.release();
+        }
+    }
+);
+
+
+// =====================================================
 // 管理介面：修改廠商
 // 名稱不允許修改，避免影響舊歷史紀錄。
 // 可修改排序、啟用/停用。
