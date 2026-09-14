@@ -1268,7 +1268,7 @@
       <div
         style="margin-top:10px;font-size:10px;color:#aaa;text-align:center;"
       >
-        系統版本：v1.6.1（2026-09-14）
+        系統版本：v1.6.2（2026-09-14）
       </div>
 
     </div>
@@ -1366,7 +1366,7 @@
             </div>
 
             <div class="settings-field">
-              <label>排序</label>
+              <label>顯示順序</label>
               <input
                 id="new-tank-sort"
                 type="number"
@@ -1397,7 +1397,7 @@
                   <th>密度 t/m³</th>
                   <th>保留 m³</th>
                   <th>分類</th>
-                  <th>排序</th>
+                  <th>顯示順序</th>
                   <th>啟用</th>
                 </tr>
               </thead>
@@ -1437,7 +1437,7 @@
             </div>
 
             <div class="settings-field">
-              <label>排序</label>
+              <label>顯示順序</label>
               <input
                 id="new-vendor-sort"
                 type="number"
@@ -1463,9 +1463,8 @@
               <thead>
                 <tr>
                   <th>廠商名稱</th>
-                  <th>排序</th>
+                  <th>顯示順序</th>
                   <th>啟用</th>
-                  <th>儲存</th>
                 </tr>
               </thead>
 
@@ -1474,6 +1473,12 @@
 
             </table>
 
+          </div>
+
+          <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:14px;">
+            <button class="settings-save-btn" onclick="saveAllVendorMasters()">
+              💾 儲存全部廠商設定
+            </button>
           </div>
 
         </div>
@@ -5372,9 +5377,8 @@
           sortInput.value =
             tank.sortOrder;
 
-          sortCell.appendChild(
-            sortInput
-          );
+          sortCell.appendChild(sortInput);
+          sortCell.appendChild(createOrderButtons(row, '#admin-tank-body', '.tank-sort-input'));
 
 
           const enabledCell =
@@ -5455,176 +5459,90 @@
     }
 
 
-    function renderAdminVendors(
-      vendors
-    ) {
+    function createOrderButtons(row, bodySelector, inputSelector) {
+      const wrap = document.createElement('span');
+      wrap.style.display = 'inline-flex';
+      wrap.style.gap = '4px';
+      wrap.style.marginLeft = '6px';
 
-      const body =
-        document.getElementById(
-          'admin-vendor-body'
-        );
+      const up = document.createElement('button');
+      up.type = 'button';
+      up.className = 'settings-save-btn';
+      up.textContent = '↑';
+      up.title = '往上移';
+      up.style.padding = '4px 8px';
+      up.onclick = () => moveAdminRow(row, -1, bodySelector, inputSelector);
 
+      const down = document.createElement('button');
+      down.type = 'button';
+      down.className = 'settings-save-btn';
+      down.textContent = '↓';
+      down.title = '往下移';
+      down.style.padding = '4px 8px';
+      down.onclick = () => moveAdminRow(row, 1, bodySelector, inputSelector);
 
-      body.innerHTML =
-        '';
-
-
-      vendors.forEach(
-        vendor => {
-
-          const row =
-            document.createElement(
-              'tr'
-            );
-
-
-          const nameCell =
-            document.createElement(
-              'td'
-            );
-
-          nameCell.textContent =
-            vendor.vendorName;
-
-
-          const sortCell =
-            document.createElement(
-              'td'
-            );
-
-          const sortInput =
-            document.createElement(
-              'input'
-            );
-
-          sortInput.type =
-            'number';
-
-          sortInput.min =
-            '0';
-
-          sortInput.step =
-            '1';
-
-          sortInput.value =
-            vendor.sortOrder;
-
-          sortCell.appendChild(
-            sortInput
-          );
-
-
-          const enabledCell =
-            document.createElement(
-              'td'
-            );
-
-          const enabledLabel =
-            document.createElement(
-              'label'
-            );
-
-          enabledLabel.className =
-            'enabled-label';
-
-
-          const enabledInput =
-            document.createElement(
-              'input'
-            );
-
-          enabledInput.type =
-            'checkbox';
-
-          enabledInput.checked =
-            vendor.enabled === true;
-
-
-          const enabledText =
-            document.createElement(
-              'span'
-            );
-
-          enabledText.textContent =
-            '啟用';
-
-
-          enabledLabel.appendChild(
-            enabledInput
-          );
-
-          enabledLabel.appendChild(
-            enabledText
-          );
-
-          enabledCell.appendChild(
-            enabledLabel
-          );
-
-
-          const saveCell =
-            document.createElement(
-              'td'
-            );
-
-          const saveButton =
-            document.createElement(
-              'button'
-            );
-
-          saveButton.className =
-            'settings-save-btn';
-
-          saveButton.textContent =
-            '儲存';
-
-
-          saveButton.onclick =
-            async () => {
-
-              await saveVendorMaster(
-                vendor.id,
-                {
-                  sortOrder:
-                    Number(
-                      sortInput.value
-                    ),
-
-                  enabled:
-                    enabledInput.checked
-                }
-              );
-            };
-
-
-          saveCell.appendChild(
-            saveButton
-          );
-
-
-          [
-            nameCell,
-            sortCell,
-            enabledCell,
-            saveCell
-          ]
-          .forEach(
-            cell => {
-
-              row.appendChild(
-                cell
-              );
-            }
-          );
-
-
-          body.appendChild(
-            row
-          );
-        }
-      );
+      wrap.append(up, down);
+      return wrap;
     }
 
+    function moveAdminRow(row, direction, bodySelector, inputSelector) {
+      const body = document.querySelector(bodySelector);
+      if (!body || !row) return;
+      if (direction < 0) {
+        const prev = row.previousElementSibling;
+        if (prev) body.insertBefore(row, prev);
+      } else {
+        const next = row.nextElementSibling;
+        if (next) body.insertBefore(next, row);
+      }
+      renumberAdminRows(bodySelector, inputSelector);
+    }
+
+    function renumberAdminRows(bodySelector, inputSelector) {
+      const rows = Array.from(document.querySelectorAll(`${bodySelector} tr`));
+      rows.forEach((row, index) => {
+        const input = row.querySelector(inputSelector);
+        if (input) input.value = index + 1;
+      });
+    }
+
+    function renderAdminVendors(vendors) {
+      const body = document.getElementById('admin-vendor-body');
+      body.innerHTML = '';
+
+      vendors.forEach(vendor => {
+        const row = document.createElement('tr');
+        row.dataset.vendorId = String(vendor.id);
+
+        const nameCell = document.createElement('td');
+        nameCell.textContent = vendor.vendorName;
+
+        const sortCell = document.createElement('td');
+        const sortInput = document.createElement('input');
+        sortInput.type = 'number';
+        sortInput.min = '0';
+        sortInput.step = '1';
+        sortInput.className = 'vendor-sort-input';
+        sortInput.value = vendor.sortOrder;
+        sortCell.appendChild(sortInput);
+        sortCell.appendChild(createOrderButtons(row, '#admin-vendor-body', '.vendor-sort-input'));
+
+        const enabledCell = document.createElement('td');
+        const enabledLabel = document.createElement('label');
+        enabledLabel.className = 'enabled-label';
+        const enabledInput = document.createElement('input');
+        enabledInput.type = 'checkbox';
+        enabledInput.className = 'vendor-enabled-input';
+        enabledInput.checked = vendor.enabled === true;
+        const enabledText = document.createElement('span');
+        enabledText.textContent = '啟用';
+        enabledLabel.append(enabledInput, enabledText);
+        enabledCell.appendChild(enabledLabel);
+
+        [nameCell, sortCell, enabledCell].forEach(cell => row.appendChild(cell));
+        body.appendChild(row);
+      });
+    }
 
     function renderTruckConfigAdmin(tanks, vendors, configs) {
       const tankSelect = document.getElementById('truck-config-tank');
@@ -5876,7 +5794,7 @@
         }
 
         if (!Number.isInteger(sortOrder) || sortOrder < 0) {
-          alert(`⚠️ ${tankNo}：排序必須為 0 以上整數`);
+          alert(`⚠️ ${tankNo}：顯示順序必須為 0 以上整數`);
           return;
         }
 
@@ -6048,6 +5966,40 @@
     }
 
 
+    async function saveAllVendorMasters() {
+      const rows = Array.from(document.querySelectorAll('#admin-vendor-body tr[data-vendor-id]'));
+      if (!rows.length) {
+        alert('⚠️ 目前沒有可儲存的廠商設定');
+        return;
+      }
+
+      const vendors = [];
+      for (const row of rows) {
+        const id = Number(row.dataset.vendorId);
+        const sortOrder = Number(row.querySelector('.vendor-sort-input')?.value);
+        const enabled = row.querySelector('.vendor-enabled-input')?.checked === true;
+        if (!Number.isInteger(id) || id <= 0 || !Number.isInteger(sortOrder) || sortOrder < 0 || sortOrder > 10000) {
+          alert('⚠️ 請確認廠商顯示順序為 0 到 10000 的整數');
+          return;
+        }
+        vendors.push({ id, sortOrder, enabled });
+      }
+
+      if (!confirm(`確定一次儲存目前 ${vendors.length} 個廠商的設定嗎？\n系統只會更新有變更的廠商。`)) return;
+
+      try {
+        const result = await adminRequest('/api/admin/vendors/batch-config', {
+          method: 'POST',
+          body: JSON.stringify({ vendors })
+        });
+        alert(`✅ ${result.message}`);
+        await refreshAfterAdminChange();
+      } catch (error) {
+        alert(`⚠️ ${error.message}`);
+      }
+    }
+
+
     async function saveVendorMaster(
       id,
       values
@@ -6186,7 +6138,7 @@
         category:
           '分類',
         sort_order:
-          '排序',
+          '顯示順序',
         enabled:
           '啟用',
         id:
