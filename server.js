@@ -3639,6 +3639,37 @@ io.on(
                             );
 
 
+                        // 操作紀錄：新增廠商
+                        // 讓「操作紀錄」頁面顯示「新增廠商：XXX」。
+                        await client.query(
+                            `
+                            INSERT INTO tank_history (
+                                tank_no,
+                                old_level,
+                                new_level,
+                                old_vendors,
+                                new_vendors,
+                                updated_by,
+                                updated_at
+                            )
+                            VALUES (
+                                $1,
+                                NULL,
+                                NULL,
+                                '[]'::jsonb,
+                                $2::jsonb,
+                                $3,
+                                NOW()
+                            )
+                            `,
+                            [
+                                tankNo,
+                                JSON.stringify([vendor.vendorName]),
+                                socket.user.username
+                            ]
+                        );
+
+
                         addedVendors.push({
                             id:
                                 Number(
@@ -3702,7 +3733,8 @@ io.on(
                                     )::date
                                 RETURNING
                                     id,
-                                    tank_no
+                                    tank_no,
+                                    vendor_id
                                 `,
                                 [
                                     recordId,
@@ -3721,11 +3753,61 @@ io.on(
                         }
 
 
+                        const removedVendorResult =
+                            await client.query(
+                                `
+                                SELECT vendor_name
+                                FROM vendor_master
+                                WHERE id = $1
+                                `,
+                                [
+                                    removeResult.rows[0].vendor_id
+                                ]
+                            );
+
+
+                        const removedVendorName =
+                            removedVendorResult.rows[0]?.vendor_name ||
+                            `廠商 ID ${removeResult.rows[0].vendor_id}`;
+
+
+                        // 操作紀錄：移除廠商
+                        await client.query(
+                            `
+                            INSERT INTO tank_history (
+                                tank_no,
+                                old_level,
+                                new_level,
+                                old_vendors,
+                                new_vendors,
+                                updated_by,
+                                updated_at
+                            )
+                            VALUES (
+                                $1,
+                                NULL,
+                                NULL,
+                                $2::jsonb,
+                                '[]'::jsonb,
+                                $3,
+                                NOW()
+                            )
+                            `,
+                            [
+                                removeResult.rows[0].tank_no,
+                                JSON.stringify([removedVendorName]),
+                                socket.user.username
+                            ]
+                        );
+
+
                         removedVendors.push({
                             id:
                                 recordId,
                             tankNo:
                                 removeResult.rows[0].tank_no,
+                            vendorName:
+                                removedVendorName,
                             removedBy:
                                 socket.user.username
                         });
