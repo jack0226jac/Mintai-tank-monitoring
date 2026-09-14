@@ -2496,6 +2496,148 @@ app.patch(
 // =====================================================
 
 app.post(
+    '/api/admin/vendor-tank-config/batch',
+    verifyApiToken,
+    verifyAdmin,
+    async (req, res) => {
+
+        const vendorId = Number(req.body.vendorId);
+        const tanks = Array.isArray(req.body.tanks) ? req.body.tanks : [];
+
+        if (!Number.isInteger(vendorId) || vendorId <= 0 || tanks.length > 200) {
+            return res.status(400).json({ success: false, message: '廠商或桶槽設定格式錯誤' });
+        }
+
+        const normalized = [];
+        const seenTankNos = new Set();
+
+        for (const item of tanks) {
+            const tankNo = String(item?.tankNo || '').trim();
+            const enabled = item?.enabled === true;
+            const truckCapacityTon = enabled ? Number(item?.truckCapacityTon) : null;
+
+            if (
+                !/^[A-Za-z0-9_-]{1,20}$/.test(tankNo) ||
+                seenTankNos.has(tankNo) ||
+                (enabled && (!Number.isFinite(truckCapacityTon) || truckCapacityTon <= 0 || truckCapacityTon > 100))
+            ) {
+                return res.status(400).json({ success: false, message: `桶槽 ${tankNo || '(空白)'} 設定格式錯誤` });
+            }
+
+            seenTankNos.add(tankNo);
+            normalized.push({ tankNo, enabled, truckCapacityTon });
+        }
+
+        const client = await pool.connect();
+
+        try {
+            await client.query('BEGIN');
+
+            const vendorResult = await client.query(
+                'SELECT * FROM vendor_master WHERE id = $1 FOR UPDATE',
+                [vendorId]
+            );
+            if (!vendorResult.rows.length) {
+                await client.query('ROLLBACK');
+                return res.status(404).json({ success: false, message: '找不到廠商' });
+            }
+
+            if (normalized.length) {
+                const activeTankResult = await client.query(
+                    'SELECT tank_no FROM tank_master WHERE enabled = TRUE'
+                );
+                const activeTankNos = new Set(activeTankResult.rows.map(row => row.tank_no));
+                for (const item of normalized) {
+                    if (!activeTankNos.has(item.tankNo)) {
+                        await client.query('ROLLBACK');
+                        return res.status(400).json({ success: false, message: `桶槽 ${item.tankNo} 不存在或已停用` });
+                    }
+                }
+            }
+
+            let changedCount = 0;
+
+            for (const item of normalized) {
+                const oldResult = await client.query(
+                    `SELECT * FROM vendor_tank_config
+                     WHERE tank_no = $1 AND vendor_id = $2
+                     FOR UPDATE`,
+                    [item.tankNo, vendorId]
+                );
+                const oldRow = oldResult.rows[0] || null;
+
+                if (item.enabled) {
+                    const oldCapacity = oldRow ? Number(oldRow.truck_capacity_ton) : null;
+                    const oldEnabled = oldRow ? oldRow.enabled === true : false;
+                    const changed = !oldRow || !oldEnabled || oldCapacity !== item.truckCapacityTon;
+                    if (!changed) continue;
+
+                    const result = await client.query(
+                        `INSERT INTO vendor_tank_config
+                            (tank_no, vendor_id, truck_capacity_ton, enabled, created_at, updated_at)
+                         VALUES ($1, $2, $3, TRUE, NOW(), NOW())
+                         ON CONFLICT (tank_no, vendor_id)
+                         DO UPDATE SET
+                            truck_capacity_ton = EXCLUDED.truck_capacity_ton,
+                            enabled = TRUE,
+                            updated_at = NOW()
+                         RETURNING *`,
+                        [item.tankNo, vendorId, item.truckCapacityTon]
+                    );
+
+                    await insertAdminHistory(client, {
+                        actionType: oldRow ? 'UPDATE_TRUCK_CONFIG' : 'CREATE_TRUCK_CONFIG',
+                        targetType: 'VENDOR_TANK',
+                        targetId: `${item.tankNo}:${vendorId}`,
+                        oldData: oldRow,
+                        newData: result.rows[0],
+                        username: req.user.username,
+                        ipAddress: getRequestIp(req)
+                    });
+                    changedCount += 1;
+                } else if (oldRow && oldRow.enabled === true) {
+                    const result = await client.query(
+                        `UPDATE vendor_tank_config
+                         SET enabled = FALSE, updated_at = NOW()
+                         WHERE id = $1
+                         RETURNING *`,
+                        [oldRow.id]
+                    );
+
+                    await insertAdminHistory(client, {
+                        actionType: 'DISABLE_TRUCK_CONFIG',
+                        targetType: 'VENDOR_TANK',
+                        targetId: `${item.tankNo}:${vendorId}`,
+                        oldData: oldRow,
+                        newData: result.rows[0],
+                        username: req.user.username,
+                        ipAddress: getRequestIp(req)
+                    });
+                    changedCount += 1;
+                }
+            }
+
+            await client.query('COMMIT');
+            return res.json({
+                success: true,
+                changedCount,
+                message: changedCount
+                    ? `已儲存此廠商供應設定，共更新 ${changedCount} 筆`
+                    : '設定沒有變更'
+            });
+
+        } catch (error) {
+            await client.query('ROLLBACK');
+            console.error('❌ 批次儲存廠商桶槽車重設定失敗:', error);
+            return res.status(500).json({ success: false, message: '批次儲存設定失敗' });
+        } finally {
+            client.release();
+        }
+    }
+);
+
+
+app.post(
     '/api/admin/vendor-tank-config',
     verifyApiToken,
     verifyAdmin,
