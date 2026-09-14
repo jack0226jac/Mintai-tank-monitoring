@@ -1126,7 +1126,7 @@
 
   
 
-    /* v1.6.0：剩餘空間 / 可進車數 */
+    /* v1.6.1：剩餘空間 / 可進車數 */
     .capacity-panel {
       margin-top: 10px;
       padding: 10px;
@@ -1268,7 +1268,7 @@
       <div
         style="margin-top:10px;font-size:10px;color:#aaa;text-align:center;"
       >
-        系統版本：v1.6.0（2026-09-14）
+        系統版本：v1.6.1（2026-09-14）
       </div>
 
     </div>
@@ -1399,7 +1399,6 @@
                   <th>分類</th>
                   <th>排序</th>
                   <th>啟用</th>
-                  <th>儲存</th>
                 </tr>
               </thead>
 
@@ -1408,6 +1407,15 @@
 
             </table>
 
+          </div>
+
+          <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:14px;">
+            <button
+              class="settings-save-btn"
+              onclick="saveAllTankMasters()"
+            >
+              💾 儲存全部桶槽設定
+            </button>
           </div>
 
         </div>
@@ -5240,6 +5248,8 @@
               'tr'
             );
 
+          row.dataset.tankNo = tank.tankNo;
+
 
           const tankCell =
             document.createElement(
@@ -5262,6 +5272,8 @@
 
           productInput.type =
             'text';
+
+          productInput.className = 'tank-product-input';
 
           productInput.value =
             tank.product;
@@ -5290,6 +5302,8 @@
           maxInput.step =
             '0.01';
 
+          maxInput.className = 'tank-max-input';
+
           maxInput.value =
             tank.maxLevel;
 
@@ -5302,6 +5316,7 @@
           densityInput.type = 'number';
           densityInput.min = '0.001';
           densityInput.step = '0.001';
+          densityInput.className = 'tank-density-input';
           densityInput.value = tank.density ?? '';
           densityInput.placeholder = '未設定';
           densityCell.appendChild(densityInput);
@@ -5311,6 +5326,7 @@
           reserveInput.type = 'number';
           reserveInput.min = '0';
           reserveInput.step = '0.01';
+          reserveInput.className = 'tank-reserve-input';
           reserveInput.value = tank.safetyReserve ?? 0;
           reserveCell.appendChild(reserveInput);
 
@@ -5324,6 +5340,8 @@
             createCategorySelect(
               tank.category
             );
+
+          categorySelect.classList.add('tank-category-select');
 
           categoryCell.appendChild(
             categorySelect
@@ -5348,6 +5366,8 @@
 
           sortInput.step =
             '1';
+
+          sortInput.className = 'tank-sort-input';
 
           sortInput.value =
             tank.sortOrder;
@@ -5379,6 +5399,8 @@
           enabledInput.type =
             'checkbox';
 
+          enabledInput.className = 'tank-enabled-input';
+
           enabledInput.checked =
             tank.enabled === true;
 
@@ -5405,63 +5427,6 @@
           );
 
 
-          const saveCell =
-            document.createElement(
-              'td'
-            );
-
-          const saveButton =
-            document.createElement(
-              'button'
-            );
-
-          saveButton.className =
-            'settings-save-btn';
-
-          saveButton.textContent =
-            '儲存';
-
-
-          saveButton.onclick =
-            async () => {
-
-              await saveTankMaster(
-                tank.tankNo,
-                {
-                  product:
-                    productInput.value.trim(),
-
-                  maxLevel:
-                    Number(
-                      maxInput.value
-                    ),
-
-                  density:
-                    densityInput.value === '' ? null : Number(densityInput.value),
-
-                  safetyReserve:
-                    Number(reserveInput.value || 0),
-
-                  category:
-                    categorySelect.value,
-
-                  sortOrder:
-                    Number(
-                      sortInput.value
-                    ),
-
-                  enabled:
-                    enabledInput.checked
-                }
-              );
-            };
-
-
-          saveCell.appendChild(
-            saveButton
-          );
-
-
           [
             tankCell,
             productCell,
@@ -5470,8 +5435,7 @@
             reserveCell,
             categoryCell,
             sortCell,
-            enabledCell,
-            saveCell
+            enabledCell
           ]
           .forEach(
             cell => {
@@ -5868,6 +5832,81 @@
         alert(
           `⚠️ ${error.message}`
         );
+      }
+    }
+
+
+    async function saveAllTankMasters() {
+
+      const rows = Array.from(
+        document.querySelectorAll('#admin-tank-body tr[data-tank-no]')
+      );
+
+      if (!rows.length) {
+        alert('⚠️ 目前沒有可儲存的桶槽設定');
+        return;
+      }
+
+      const tanks = [];
+
+      for (const row of rows) {
+        const tankNo = row.dataset.tankNo;
+        const product = row.querySelector('.tank-product-input')?.value.trim() || '';
+        const maxLevel = Number(row.querySelector('.tank-max-input')?.value);
+        const densityText = row.querySelector('.tank-density-input')?.value ?? '';
+        const density = densityText === '' ? null : Number(densityText);
+        const safetyReserve = Number(row.querySelector('.tank-reserve-input')?.value || 0);
+        const category = row.querySelector('.tank-category-select')?.value || '';
+        const sortOrder = Number(row.querySelector('.tank-sort-input')?.value);
+        const enabled = row.querySelector('.tank-enabled-input')?.checked === true;
+
+        if (!product || !Number.isFinite(maxLevel) || maxLevel <= 0) {
+          alert(`⚠️ ${tankNo}：請確認品名與桶槽上限`);
+          return;
+        }
+
+        if (density !== null && (!Number.isFinite(density) || density <= 0)) {
+          alert(`⚠️ ${tankNo}：密度必須大於 0，或留空表示未設定`);
+          return;
+        }
+
+        if (!Number.isFinite(safetyReserve) || safetyReserve < 0 || safetyReserve > maxLevel) {
+          alert(`⚠️ ${tankNo}：安全保留不可小於 0 或大於桶槽上限`);
+          return;
+        }
+
+        if (!Number.isInteger(sortOrder) || sortOrder < 0) {
+          alert(`⚠️ ${tankNo}：排序必須為 0 以上整數`);
+          return;
+        }
+
+        tanks.push({
+          tankNo,
+          product,
+          maxLevel,
+          density,
+          safetyReserve,
+          category,
+          sortOrder,
+          enabled
+        });
+      }
+
+      if (!confirm(`確定一次儲存目前 ${tanks.length} 個桶槽的設定嗎？\n系統只會更新有變更的桶槽。`)) {
+        return;
+      }
+
+      try {
+        const result = await adminRequest('/api/admin/tanks/batch-config', {
+          method: 'POST',
+          body: JSON.stringify({ tanks })
+        });
+
+        alert(`✅ ${result.message}`);
+        await refreshAfterAdminChange();
+
+      } catch (error) {
+        alert(`⚠️ ${error.message}`);
       }
     }
 
