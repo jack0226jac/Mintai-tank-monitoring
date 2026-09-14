@@ -555,6 +555,17 @@ async function initDatabase() {
     `);
 
 
+    // v1.6.5：供應設定支援直接進料 / 稀釋進料
+    // final_density = 最終槽液密度（t/m³）；濃度以重量百分比 % 表示
+    await pool.query(`
+        ALTER TABLE vendor_tank_config
+        ADD COLUMN IF NOT EXISTS feed_mode VARCHAR(20) NOT NULL DEFAULT 'direct',
+        ADD COLUMN IF NOT EXISTS raw_concentration NUMERIC,
+        ADD COLUMN IF NOT EXISTS target_concentration NUMERIC,
+        ADD COLUMN IF NOT EXISTS final_density NUMERIC
+    `);
+
+
     await pool.query(`
         CREATE INDEX IF NOT EXISTS idx_vendor_tank_config_tank
         ON vendor_tank_config (tank_no, enabled)
@@ -953,6 +964,10 @@ async function loadVendorTankConfig(
             vtc.vendor_id,
             vm.vendor_name,
             vtc.truck_capacity_ton,
+            vtc.feed_mode,
+            vtc.raw_concentration,
+            vtc.target_concentration,
+            vtc.final_density,
             vtc.enabled
         FROM vendor_tank_config vtc
         JOIN vendor_master vm ON vm.id = vtc.vendor_id
@@ -967,6 +982,10 @@ async function loadVendorTankConfig(
         vendorId: Number(row.vendor_id),
         vendorName: row.vendor_name,
         truckCapacityTon: Number(row.truck_capacity_ton),
+        feedMode: row.feed_mode || 'direct',
+        rawConcentration: row.raw_concentration === null ? null : Number(row.raw_concentration),
+        targetConcentration: row.target_concentration === null ? null : Number(row.target_concentration),
+        finalDensity: row.final_density === null ? null : Number(row.final_density),
         enabled: row.enabled
     }));
 }
@@ -2515,17 +2534,29 @@ app.post(
             const tankNo = String(item?.tankNo || '').trim();
             const enabled = item?.enabled === true;
             const truckCapacityTon = enabled ? Number(item?.truckCapacityTon) : null;
+            const feedMode = enabled && item?.feedMode === 'dilute' ? 'dilute' : 'direct';
+            const rawConcentration = enabled && feedMode === 'dilute' ? Number(item?.rawConcentration) : null;
+            const targetConcentration = enabled && feedMode === 'dilute' ? Number(item?.targetConcentration) : null;
+            const finalDensityValue = enabled && item?.finalDensity !== null && item?.finalDensity !== undefined && item?.finalDensity !== '' ? Number(item.finalDensity) : null;
+            const finalDensity = Number.isFinite(finalDensityValue) ? finalDensityValue : null;
 
-            if (
+            const baseInvalid =
                 !/^[A-Za-z0-9_-]{1,20}$/.test(tankNo) ||
                 seenTankNos.has(tankNo) ||
-                (enabled && (!Number.isFinite(truckCapacityTon) || truckCapacityTon <= 0 || truckCapacityTon > 100))
-            ) {
+                (enabled && (!Number.isFinite(truckCapacityTon) || truckCapacityTon <= 0 || truckCapacityTon > 100)) ||
+                (enabled && finalDensity !== null && (!Number.isFinite(finalDensity) || finalDensity <= 0 || finalDensity > 10));
+            const dilutionInvalid = enabled && feedMode === 'dilute' && (
+                !Number.isFinite(rawConcentration) || rawConcentration <= 0 || rawConcentration > 100 ||
+                !Number.isFinite(targetConcentration) || targetConcentration <= 0 || targetConcentration > 100 ||
+                rawConcentration <= targetConcentration
+            );
+
+            if (baseInvalid || dilutionInvalid) {
                 return res.status(400).json({ success: false, message: `桶槽 ${tankNo || '(空白)'} 設定格式錯誤` });
             }
 
             seenTankNos.add(tankNo);
-            normalized.push({ tankNo, enabled, truckCapacityTon });
+            normalized.push({ tankNo, enabled, truckCapacityTon, feedMode, rawConcentration, targetConcentration, finalDensity });
         }
 
         const client = await pool.connect();
@@ -2569,20 +2600,30 @@ app.post(
                 if (item.enabled) {
                     const oldCapacity = oldRow ? Number(oldRow.truck_capacity_ton) : null;
                     const oldEnabled = oldRow ? oldRow.enabled === true : false;
-                    const changed = !oldRow || !oldEnabled || oldCapacity !== item.truckCapacityTon;
+                    const oldMode = oldRow ? (oldRow.feed_mode || 'direct') : null;
+                    const oldRaw = oldRow && oldRow.raw_concentration !== null ? Number(oldRow.raw_concentration) : null;
+                    const oldTarget = oldRow && oldRow.target_concentration !== null ? Number(oldRow.target_concentration) : null;
+                    const oldDensity = oldRow && oldRow.final_density !== null ? Number(oldRow.final_density) : null;
+                    const changed = !oldRow || !oldEnabled || oldCapacity !== item.truckCapacityTon ||
+                        oldMode !== item.feedMode || oldRaw !== item.rawConcentration ||
+                        oldTarget !== item.targetConcentration || oldDensity !== item.finalDensity;
                     if (!changed) continue;
 
                     const result = await client.query(
                         `INSERT INTO vendor_tank_config
-                            (tank_no, vendor_id, truck_capacity_ton, enabled, created_at, updated_at)
-                         VALUES ($1, $2, $3, TRUE, NOW(), NOW())
+                            (tank_no, vendor_id, truck_capacity_ton, feed_mode, raw_concentration, target_concentration, final_density, enabled, created_at, updated_at)
+                         VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE, NOW(), NOW())
                          ON CONFLICT (tank_no, vendor_id)
                          DO UPDATE SET
                             truck_capacity_ton = EXCLUDED.truck_capacity_ton,
+                            feed_mode = EXCLUDED.feed_mode,
+                            raw_concentration = EXCLUDED.raw_concentration,
+                            target_concentration = EXCLUDED.target_concentration,
+                            final_density = EXCLUDED.final_density,
                             enabled = TRUE,
                             updated_at = NOW()
                          RETURNING *`,
-                        [item.tankNo, vendorId, item.truckCapacityTon]
+                        [item.tankNo, vendorId, item.truckCapacityTon, item.feedMode, item.rawConcentration, item.targetConcentration, item.finalDensity]
                     );
 
                     await insertAdminHistory(client, {
