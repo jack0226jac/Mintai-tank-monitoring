@@ -958,7 +958,7 @@ async function loadVendorTankConfig(
         JOIN vendor_master vm ON vm.id = vtc.vendor_id
         JOIN tank_master tm ON tm.tank_no = vtc.tank_no
         ${whereClause}
-        ORDER BY tm.sort_order ASC, vm.sort_order ASC, vm.vendor_name ASC
+        ORDER BY vm.sort_order ASC, vm.vendor_name ASC, tm.sort_order ASC, tm.tank_no ASC
     `);
 
     return result.rows.map(row => ({
