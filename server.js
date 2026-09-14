@@ -344,6 +344,16 @@ function validateTankMasterInput(body) {
             body.sortOrder
         );
 
+    const density =
+        body.density === '' || body.density === null || body.density === undefined
+            ? null
+            : Number(body.density);
+
+    const safetyReserve =
+        body.safetyReserve === '' || body.safetyReserve === null || body.safetyReserve === undefined
+            ? 0
+            : Number(body.safetyReserve);
+
 
     if (
         !/^[A-Za-z0-9_-]{1,20}$/.test(
@@ -401,6 +411,27 @@ function validateTankMasterInput(body) {
         };
     }
 
+    if (
+        density !== null &&
+        (!Number.isFinite(density) || density <= 0 || density > 10)
+    ) {
+        return {
+            success: false,
+            message: '密度必須大於 0（單位 t/m³）'
+        };
+    }
+
+    if (
+        !Number.isFinite(safetyReserve) ||
+        safetyReserve < 0 ||
+        safetyReserve > maxLevel
+    ) {
+        return {
+            success: false,
+            message: '安全保留體積不可小於 0 或大於桶槽上限'
+        };
+    }
+
 
     return {
         success: true,
@@ -408,6 +439,8 @@ function validateTankMasterInput(body) {
             tankNo,
             product,
             maxLevel,
+            density,
+            safetyReserve,
             category,
             sortOrder
         }
@@ -487,6 +520,15 @@ async function initDatabase() {
     `);
 
 
+    // v1.6.0：桶槽體積換算設定
+    // density = 密度（t/m³）；safety_reserve = 安全保留體積（m³）
+    await pool.query(`
+        ALTER TABLE tank_master
+        ADD COLUMN IF NOT EXISTS density NUMERIC,
+        ADD COLUMN IF NOT EXISTS safety_reserve NUMERIC NOT NULL DEFAULT 0
+    `);
+
+
     await pool.query(`
         CREATE TABLE IF NOT EXISTS vendor_master (
             id BIGSERIAL PRIMARY KEY,
@@ -496,6 +538,26 @@ async function initDatabase() {
             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
             updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )
+    `);
+
+
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS vendor_tank_config (
+            id BIGSERIAL PRIMARY KEY,
+            tank_no VARCHAR(20) NOT NULL REFERENCES tank_master(tank_no),
+            vendor_id BIGINT NOT NULL REFERENCES vendor_master(id),
+            truck_capacity_ton NUMERIC NOT NULL,
+            enabled BOOLEAN NOT NULL DEFAULT TRUE,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            UNIQUE (tank_no, vendor_id)
+        )
+    `);
+
+
+    await pool.query(`
+        CREATE INDEX IF NOT EXISTS idx_vendor_tank_config_tank
+        ON vendor_tank_config (tank_no, enabled)
     `);
 
 
@@ -623,6 +685,7 @@ async function initDatabase() {
     console.log('✅ PostgreSQL tank_history 資料表已就緒');
     console.log('✅ PostgreSQL tank_master 資料表已就緒');
     console.log('✅ PostgreSQL vendor_master 資料表已就緒');
+    console.log('✅ PostgreSQL vendor_tank_config 資料表已就緒');
     console.log('✅ PostgreSQL tank_vendor_records 資料表已就緒');
 }
 
@@ -750,6 +813,8 @@ async function loadTankMaster() {
                 tank_no,
                 product,
                 max_level,
+                density,
+                safety_reserve,
                 category,
                 sort_order
             FROM tank_master
@@ -768,6 +833,10 @@ async function loadTankMaster() {
                 Number(
                     row.max_level
                 ),
+            density:
+                row.density === null ? null : Number(row.density),
+            safetyReserve:
+                Number(row.safety_reserve || 0),
             category: row.category,
             sortOrder: row.sort_order
         })
@@ -809,6 +878,8 @@ async function loadAdminTankMaster() {
                 tank_no,
                 product,
                 max_level,
+                density,
+                safety_reserve,
                 category,
                 sort_order,
                 enabled
@@ -827,6 +898,10 @@ async function loadAdminTankMaster() {
                 Number(
                     row.max_level
                 ),
+            density:
+                row.density === null ? null : Number(row.density),
+            safetyReserve:
+                Number(row.safety_reserve || 0),
             category: row.category,
             sortOrder: row.sort_order,
             enabled: row.enabled
@@ -859,6 +934,41 @@ async function loadAdminVendorMaster() {
             enabled: row.enabled
         })
     );
+}
+
+
+async function loadVendorTankConfig(
+    includeDisabled = false
+) {
+
+    const whereClause =
+        includeDisabled
+            ? ''
+            : 'WHERE vtc.enabled = TRUE AND tm.enabled = TRUE AND vm.enabled = TRUE';
+
+    const result = await pool.query(`
+        SELECT
+            vtc.id,
+            vtc.tank_no,
+            vtc.vendor_id,
+            vm.vendor_name,
+            vtc.truck_capacity_ton,
+            vtc.enabled
+        FROM vendor_tank_config vtc
+        JOIN vendor_master vm ON vm.id = vtc.vendor_id
+        JOIN tank_master tm ON tm.tank_no = vtc.tank_no
+        ${whereClause}
+        ORDER BY tm.sort_order ASC, vm.sort_order ASC, vm.vendor_name ASC
+    `);
+
+    return result.rows.map(row => ({
+        id: Number(row.id),
+        tankNo: row.tank_no,
+        vendorId: Number(row.vendor_id),
+        vendorName: row.vendor_name,
+        truckCapacityTon: Number(row.truck_capacity_ton),
+        enabled: row.enabled
+    }));
 }
 
 
@@ -1592,11 +1702,15 @@ app.get(
             const vendors =
                 await loadVendorMaster();
 
+            const truckConfigs =
+                await loadVendorTankConfig(false);
+
 
             return res.json({
                 success: true,
                 tanks,
-                vendors
+                vendors,
+                truckConfigs
             });
 
         } catch (error) {
@@ -1708,11 +1822,15 @@ app.get(
             const vendors =
                 await loadAdminVendorMaster();
 
+            const truckConfigs =
+                await loadVendorTankConfig(true);
+
 
             return res.json({
                 success: true,
                 tanks,
-                vendors
+                vendors,
+                truckConfigs
             });
 
         } catch (error) {
@@ -1838,6 +1956,8 @@ app.post(
             tankNo,
             product,
             maxLevel,
+            density,
+            safetyReserve,
             category,
             sortOrder
         } = validation.data;
@@ -1856,6 +1976,8 @@ app.post(
                         tank_no,
                         product,
                         max_level,
+                        density,
+                        safety_reserve,
                         category,
                         sort_order,
                         enabled,
@@ -1863,13 +1985,15 @@ app.post(
                         updated_at
                     )
                     VALUES (
-                        $1, $2, $3, $4, $5,
+                        $1, $2, $3, $4, $5, $6, $7,
                         TRUE, NOW(), NOW()
                     )
                     RETURNING
                         tank_no,
                         product,
                         max_level,
+                        density,
+                        safety_reserve,
                         category,
                         sort_order,
                         enabled
@@ -1878,6 +2002,8 @@ app.post(
                         tankNo,
                         product,
                         maxLevel,
+                        density,
+                        safetyReserve,
                         category,
                         sortOrder
                     ]
@@ -1976,6 +2102,10 @@ app.patch(
                     req.body.product,
                 maxLevel:
                     req.body.maxLevel,
+                density:
+                    req.body.density,
+                safetyReserve:
+                    req.body.safetyReserve,
                 category:
                     req.body.category,
                 sortOrder:
@@ -2015,6 +2145,8 @@ app.patch(
                         tank_no,
                         product,
                         max_level,
+                        density,
+                        safety_reserve,
                         category,
                         sort_order,
                         enabled
@@ -2049,15 +2181,19 @@ app.patch(
                     SET
                         product = $2,
                         max_level = $3,
-                        category = $4,
-                        sort_order = $5,
-                        enabled = $6,
+                        density = $4,
+                        safety_reserve = $5,
+                        category = $6,
+                        sort_order = $7,
+                        enabled = $8,
                         updated_at = NOW()
                     WHERE tank_no = $1
                     RETURNING
                         tank_no,
                         product,
                         max_level,
+                        density,
+                        safety_reserve,
                         category,
                         sort_order,
                         enabled
@@ -2066,6 +2202,8 @@ app.patch(
                         tankNo,
                         validation.data.product,
                         validation.data.maxLevel,
+                        validation.data.density,
+                        validation.data.safetyReserve,
                         validation.data.category,
                         validation.data.sortOrder,
                         req.body.enabled
@@ -2140,6 +2278,152 @@ app.patch(
 
         } finally {
 
+            client.release();
+        }
+    }
+);
+
+
+// =====================================================
+// 管理介面：廠商 × 桶槽車重設定
+// =====================================================
+
+app.post(
+    '/api/admin/vendor-tank-config',
+    verifyApiToken,
+    verifyAdmin,
+    async (req, res) => {
+
+        const tankNo = String(req.body.tankNo || '').trim();
+        const vendorId = Number(req.body.vendorId);
+        const truckCapacityTon = Number(req.body.truckCapacityTon);
+
+        if (
+            !/^[A-Za-z0-9_-]{1,20}$/.test(tankNo) ||
+            !Number.isInteger(vendorId) || vendorId <= 0 ||
+            !Number.isFinite(truckCapacityTon) ||
+            truckCapacityTon <= 0 || truckCapacityTon > 100
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: '桶槽、廠商或每車噸數格式錯誤'
+            });
+        }
+
+        const client = await pool.connect();
+
+        try {
+            await client.query('BEGIN');
+
+            const validPair = await client.query(
+                `SELECT
+                    (SELECT COUNT(*) FROM tank_master WHERE tank_no = $1) AS tank_count,
+                    (SELECT COUNT(*) FROM vendor_master WHERE id = $2) AS vendor_count`,
+                [tankNo, vendorId]
+            );
+
+            if (
+                Number(validPair.rows[0].tank_count) !== 1 ||
+                Number(validPair.rows[0].vendor_count) !== 1
+            ) {
+                await client.query('ROLLBACK');
+                return res.status(404).json({ success: false, message: '找不到桶槽或廠商' });
+            }
+
+            const oldResult = await client.query(
+                `SELECT * FROM vendor_tank_config
+                 WHERE tank_no = $1 AND vendor_id = $2
+                 FOR UPDATE`,
+                [tankNo, vendorId]
+            );
+
+            const result = await client.query(
+                `INSERT INTO vendor_tank_config
+                    (tank_no, vendor_id, truck_capacity_ton, enabled, created_at, updated_at)
+                 VALUES ($1, $2, $3, TRUE, NOW(), NOW())
+                 ON CONFLICT (tank_no, vendor_id)
+                 DO UPDATE SET
+                    truck_capacity_ton = EXCLUDED.truck_capacity_ton,
+                    enabled = TRUE,
+                    updated_at = NOW()
+                 RETURNING *`,
+                [tankNo, vendorId, truckCapacityTon]
+            );
+
+            await insertAdminHistory(client, {
+                actionType: oldResult.rows.length ? 'UPDATE_TRUCK_CONFIG' : 'CREATE_TRUCK_CONFIG',
+                targetType: 'VENDOR_TANK',
+                targetId: `${tankNo}:${vendorId}`,
+                oldData: oldResult.rows[0] || null,
+                newData: result.rows[0],
+                username: req.user.username,
+                ipAddress: getRequestIp(req)
+            });
+
+            await client.query('COMMIT');
+            return res.json({ success: true, message: '供應廠商與車重設定已儲存' });
+
+        } catch (error) {
+            await client.query('ROLLBACK');
+            console.error('❌ 儲存廠商桶槽車重設定失敗:', error);
+            return res.status(500).json({ success: false, message: '儲存設定失敗' });
+        } finally {
+            client.release();
+        }
+    }
+);
+
+
+app.patch(
+    '/api/admin/vendor-tank-config/:id',
+    verifyApiToken,
+    verifyAdmin,
+    async (req, res) => {
+
+        const id = Number(req.params.id);
+        const truckCapacityTon = Number(req.body.truckCapacityTon);
+        const enabled = req.body.enabled;
+
+        if (
+            !Number.isInteger(id) || id <= 0 ||
+            !Number.isFinite(truckCapacityTon) || truckCapacityTon <= 0 || truckCapacityTon > 100 ||
+            typeof enabled !== 'boolean'
+        ) {
+            return res.status(400).json({ success: false, message: '設定格式錯誤' });
+        }
+
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+            const oldResult = await client.query(
+                'SELECT * FROM vendor_tank_config WHERE id = $1 FOR UPDATE', [id]
+            );
+            if (!oldResult.rows.length) {
+                await client.query('ROLLBACK');
+                return res.status(404).json({ success: false, message: '找不到設定' });
+            }
+            const result = await client.query(
+                `UPDATE vendor_tank_config
+                 SET truck_capacity_ton = $2, enabled = $3, updated_at = NOW()
+                 WHERE id = $1 RETURNING *`,
+                [id, truckCapacityTon, enabled]
+            );
+            await insertAdminHistory(client, {
+                actionType: enabled ? 'UPDATE_TRUCK_CONFIG' : 'DISABLE_TRUCK_CONFIG',
+                targetType: 'VENDOR_TANK',
+                targetId: id,
+                oldData: oldResult.rows[0],
+                newData: result.rows[0],
+                username: req.user.username,
+                ipAddress: getRequestIp(req)
+            });
+            await client.query('COMMIT');
+            return res.json({ success: true, message: '車重設定已更新' });
+        } catch (error) {
+            await client.query('ROLLBACK');
+            console.error('❌ 修改車重設定失敗:', error);
+            return res.status(500).json({ success: false, message: '修改設定失敗' });
+        } finally {
             client.release();
         }
     }
