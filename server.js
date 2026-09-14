@@ -2080,6 +2080,213 @@ app.post(
 
 
 // =====================================================
+// 管理介面：批次修改桶槽
+// 一次儲存所有桶槽設定；任一筆失敗整批回滾
+// =====================================================
+
+app.post(
+    '/api/admin/tanks/batch-config',
+    verifyApiToken,
+    verifyAdmin,
+    async (req, res) => {
+
+        const items =
+            Array.isArray(req.body?.tanks)
+                ? req.body.tanks
+                : null;
+
+        if (!items || items.length < 1 || items.length > 200) {
+            return res.status(400).json({
+                success: false,
+                message: '批次桶槽資料格式錯誤'
+            });
+        }
+
+        const validatedItems = [];
+        const seenTankNos = new Set();
+
+        for (const item of items) {
+            const validation = validateTankMasterInput({
+                tankNo: item?.tankNo,
+                product: item?.product,
+                maxLevel: item?.maxLevel,
+                density: item?.density,
+                safetyReserve: item?.safetyReserve,
+                category: item?.category,
+                sortOrder: item?.sortOrder
+            });
+
+            if (!validation.success) {
+                return res.status(400).json({
+                    success: false,
+                    message: `${String(item?.tankNo || '未知桶槽')}：${validation.message}`
+                });
+            }
+
+            if (typeof item.enabled !== 'boolean') {
+                return res.status(400).json({
+                    success: false,
+                    message: `${validation.data.tankNo}：啟用狀態格式錯誤`
+                });
+            }
+
+            if (seenTankNos.has(validation.data.tankNo)) {
+                return res.status(400).json({
+                    success: false,
+                    message: `桶槽 ${validation.data.tankNo} 重複出現`
+                });
+            }
+
+            seenTankNos.add(validation.data.tankNo);
+            validatedItems.push({
+                ...validation.data,
+                enabled: item.enabled
+            });
+        }
+
+        const client = await pool.connect();
+
+        try {
+            await client.query('BEGIN');
+
+            let changedCount = 0;
+
+            for (const item of validatedItems) {
+                const oldResult = await client.query(
+                    `
+                    SELECT
+                        tank_no,
+                        product,
+                        max_level,
+                        density,
+                        safety_reserve,
+                        category,
+                        sort_order,
+                        enabled
+                    FROM tank_master
+                    WHERE tank_no = $1
+                    FOR UPDATE
+                    `,
+                    [item.tankNo]
+                );
+
+                if (oldResult.rows.length === 0) {
+                    throw new Error(`找不到桶槽 ${item.tankNo}`);
+                }
+
+                const oldData = oldResult.rows[0];
+
+                const oldDensity =
+                    oldData.density === null
+                        ? null
+                        : Number(oldData.density);
+
+                const isChanged =
+                    String(oldData.product) !== item.product ||
+                    Number(oldData.max_level) !== item.maxLevel ||
+                    oldDensity !== item.density ||
+                    Number(oldData.safety_reserve || 0) !== item.safetyReserve ||
+                    String(oldData.category) !== item.category ||
+                    Number(oldData.sort_order) !== item.sortOrder ||
+                    oldData.enabled !== item.enabled;
+
+                if (!isChanged) {
+                    continue;
+                }
+
+                const result = await client.query(
+                    `
+                    UPDATE tank_master
+                    SET
+                        product = $2,
+                        max_level = $3,
+                        density = $4,
+                        safety_reserve = $5,
+                        category = $6,
+                        sort_order = $7,
+                        enabled = $8,
+                        updated_at = NOW()
+                    WHERE tank_no = $1
+                    RETURNING
+                        tank_no,
+                        product,
+                        max_level,
+                        density,
+                        safety_reserve,
+                        category,
+                        sort_order,
+                        enabled
+                    `,
+                    [
+                        item.tankNo,
+                        item.product,
+                        item.maxLevel,
+                        item.density,
+                        item.safetyReserve,
+                        item.category,
+                        item.sortOrder,
+                        item.enabled
+                    ]
+                );
+
+                const newData = result.rows[0];
+                let actionType = 'UPDATE_TANK';
+
+                if (oldData.enabled === true && newData.enabled === false) {
+                    actionType = 'DISABLE_TANK';
+                } else if (oldData.enabled === false && newData.enabled === true) {
+                    actionType = 'ENABLE_TANK';
+                }
+
+                await insertAdminHistory(client, {
+                    actionType,
+                    targetType: 'TANK',
+                    targetId: item.tankNo,
+                    oldData,
+                    newData,
+                    username: req.user.username,
+                    ipAddress: getRequestIp(req)
+                });
+
+                changedCount += 1;
+            }
+
+            await client.query('COMMIT');
+
+            console.log(
+                `⚙️ ${req.user.username} 批次修改桶槽設定 ${changedCount} 筆`
+            );
+
+            return res.json({
+                success: true,
+                changedCount,
+                message:
+                    changedCount > 0
+                        ? `已儲存 ${changedCount} 個桶槽設定`
+                        : '沒有需要儲存的變更'
+            });
+
+        } catch (error) {
+            await client.query('ROLLBACK');
+
+            console.error('❌ 批次修改桶槽失敗:', error);
+
+            return res.status(500).json({
+                success: false,
+                message:
+                    error && error.message && error.message.startsWith('找不到桶槽 ')
+                        ? error.message
+                        : '批次修改桶槽失敗，所有變更均未儲存'
+            });
+
+        } finally {
+            client.release();
+        }
+    }
+);
+
+
+// =====================================================
 // 管理介面：修改桶槽
 // 桶號本身不允許修改
 // =====================================================
