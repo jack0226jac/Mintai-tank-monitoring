@@ -354,6 +354,12 @@ function validateTankMasterInput(body) {
             ? 0
             : Number(body.safetyReserve);
 
+    const feedMode = body.feedMode === 'dilute' ? 'dilute' : 'direct';
+    const rawConcentration = body.rawConcentration === '' || body.rawConcentration == null ? null : Number(body.rawConcentration);
+    const rawConcentrationsInput = Array.isArray(body.rawConcentrations) ? body.rawConcentrations : (rawConcentration == null ? [] : [rawConcentration]);
+    const rawConcentrations = [...new Set(rawConcentrationsInput.map(Number).filter(Number.isFinite))].sort((a,b) => b-a);
+    const targetConcentration = body.targetConcentration === '' || body.targetConcentration == null ? null : Number(body.targetConcentration);
+
 
     if (
         !/^[A-Za-z0-9_-]{1,20}$/.test(
@@ -432,6 +438,15 @@ function validateTankMasterInput(body) {
         };
     }
 
+    if (feedMode === 'dilute') {
+        if (!Number.isFinite(targetConcentration) || targetConcentration <= 0 || targetConcentration >= 100 || rawConcentrations.length < 1 || rawConcentrations.some(v => v <= targetConcentration || v > 100 || v <= 0)) {
+            return { success: false, message: '稀釋進料請設定至少一種正確的原料濃度（每個原料濃度都必須高於目標濃度）' };
+        }
+        if (density === null) {
+            return { success: false, message: '稀釋進料必須設定稀釋後比重' };
+        }
+    }
+
 
     return {
         success: true,
@@ -441,6 +456,10 @@ function validateTankMasterInput(body) {
             maxLevel,
             density,
             safetyReserve,
+            feedMode,
+            rawConcentration: rawConcentrations[0] ?? null,
+            rawConcentrations,
+            targetConcentration,
             category,
             sortOrder
         }
@@ -525,7 +544,11 @@ async function initDatabase() {
     await pool.query(`
         ALTER TABLE tank_master
         ADD COLUMN IF NOT EXISTS density NUMERIC,
-        ADD COLUMN IF NOT EXISTS safety_reserve NUMERIC NOT NULL DEFAULT 0
+        ADD COLUMN IF NOT EXISTS safety_reserve NUMERIC NOT NULL DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS feed_mode VARCHAR(20) NOT NULL DEFAULT 'direct',
+        ADD COLUMN IF NOT EXISTS raw_concentration NUMERIC,
+        ADD COLUMN IF NOT EXISTS target_concentration NUMERIC,
+        ADD COLUMN IF NOT EXISTS raw_concentrations JSONB NOT NULL DEFAULT '[]'::jsonb
     `);
 
 
@@ -826,6 +849,10 @@ async function loadTankMaster() {
                 max_level,
                 density,
                 safety_reserve,
+                feed_mode,
+                raw_concentration,
+                raw_concentrations,
+                target_concentration,
                 category,
                 sort_order
             FROM tank_master
@@ -848,6 +875,10 @@ async function loadTankMaster() {
                 row.density === null ? null : Number(row.density),
             safetyReserve:
                 Number(row.safety_reserve || 0),
+            feedMode: row.feed_mode || 'direct',
+            rawConcentration: row.raw_concentration === null ? null : Number(row.raw_concentration),
+            rawConcentrations: Array.isArray(row.raw_concentrations) && row.raw_concentrations.length ? row.raw_concentrations.map(Number) : (row.raw_concentration === null ? [] : [Number(row.raw_concentration)]),
+            targetConcentration: row.target_concentration === null ? null : Number(row.target_concentration),
             category: row.category,
             sortOrder: row.sort_order
         })
@@ -891,6 +922,10 @@ async function loadAdminTankMaster() {
                 max_level,
                 density,
                 safety_reserve,
+                feed_mode,
+                raw_concentration,
+                raw_concentrations,
+                target_concentration,
                 category,
                 sort_order,
                 enabled
@@ -913,6 +948,10 @@ async function loadAdminTankMaster() {
                 row.density === null ? null : Number(row.density),
             safetyReserve:
                 Number(row.safety_reserve || 0),
+            feedMode: row.feed_mode || 'direct',
+            rawConcentration: row.raw_concentration === null ? null : Number(row.raw_concentration),
+            rawConcentrations: Array.isArray(row.raw_concentrations) && row.raw_concentrations.length ? row.raw_concentrations.map(Number) : (row.raw_concentration === null ? [] : [Number(row.raw_concentration)]),
+            targetConcentration: row.target_concentration === null ? null : Number(row.target_concentration),
             category: row.category,
             sortOrder: row.sort_order,
             enabled: row.enabled
@@ -1977,6 +2016,10 @@ app.post(
             maxLevel,
             density,
             safetyReserve,
+            feedMode,
+            rawConcentration,
+            rawConcentrations,
+            targetConcentration,
             category,
             sortOrder
         } = validation.data;
@@ -1997,6 +2040,10 @@ app.post(
                         max_level,
                         density,
                         safety_reserve,
+                        feed_mode,
+                        raw_concentration,
+                        raw_concentrations,
+                        target_concentration,
                         category,
                         sort_order,
                         enabled,
@@ -2004,7 +2051,7 @@ app.post(
                         updated_at
                     )
                     VALUES (
-                        $1, $2, $3, $4, $5, $6, $7,
+                        $1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9, $10, $11,
                         TRUE, NOW(), NOW()
                     )
                     RETURNING
@@ -2013,6 +2060,10 @@ app.post(
                         max_level,
                         density,
                         safety_reserve,
+                        feed_mode,
+                        raw_concentration,
+                        raw_concentrations,
+                        target_concentration,
                         category,
                         sort_order,
                         enabled
@@ -2023,6 +2074,10 @@ app.post(
                         maxLevel,
                         density,
                         safetyReserve,
+                        feedMode,
+                        rawConcentration,
+                        JSON.stringify(rawConcentrations),
+                        targetConcentration,
                         category,
                         sortOrder
                     ]
@@ -2179,6 +2234,10 @@ app.post(
                         max_level,
                         density,
                         safety_reserve,
+                        feed_mode,
+                        raw_concentration,
+                        raw_concentrations,
+                        target_concentration,
                         category,
                         sort_order,
                         enabled
@@ -2205,6 +2264,9 @@ app.post(
                     Number(oldData.max_level) !== item.maxLevel ||
                     oldDensity !== item.density ||
                     Number(oldData.safety_reserve || 0) !== item.safetyReserve ||
+                    String(oldData.feed_mode || 'direct') !== item.feedMode ||
+                    JSON.stringify((Array.isArray(oldData.raw_concentrations) && oldData.raw_concentrations.length ? oldData.raw_concentrations.map(Number) : (oldData.raw_concentration === null ? [] : [Number(oldData.raw_concentration)])).sort((a,b)=>b-a)) !== JSON.stringify(item.rawConcentrations) ||
+                    (oldData.target_concentration === null ? null : Number(oldData.target_concentration)) !== item.targetConcentration ||
                     String(oldData.category) !== item.category ||
                     Number(oldData.sort_order) !== item.sortOrder ||
                     oldData.enabled !== item.enabled;
@@ -2221,9 +2283,13 @@ app.post(
                         max_level = $3,
                         density = $4,
                         safety_reserve = $5,
-                        category = $6,
-                        sort_order = $7,
-                        enabled = $8,
+                        feed_mode = $6,
+                        raw_concentration = $7,
+                        raw_concentrations = $8::jsonb,
+                        target_concentration = $9,
+                        category = $10,
+                        sort_order = $11,
+                        enabled = $12,
                         updated_at = NOW()
                     WHERE tank_no = $1
                     RETURNING
@@ -2232,6 +2298,10 @@ app.post(
                         max_level,
                         density,
                         safety_reserve,
+                        feed_mode,
+                        raw_concentration,
+                        raw_concentrations,
+                        target_concentration,
                         category,
                         sort_order,
                         enabled
@@ -2242,6 +2312,10 @@ app.post(
                         item.maxLevel,
                         item.density,
                         item.safetyReserve,
+                        item.feedMode,
+                        item.rawConcentration,
+                        JSON.stringify(item.rawConcentrations),
+                        item.targetConcentration,
                         item.category,
                         item.sortOrder,
                         item.enabled
@@ -2332,6 +2406,9 @@ app.patch(
                     req.body.density,
                 safetyReserve:
                     req.body.safetyReserve,
+                feedMode: req.body.feedMode,
+                rawConcentration: req.body.rawConcentration,
+                targetConcentration: req.body.targetConcentration,
                 category:
                     req.body.category,
                 sortOrder:
@@ -2373,6 +2450,9 @@ app.patch(
                         max_level,
                         density,
                         safety_reserve,
+                        feed_mode,
+                        raw_concentration,
+                        target_concentration,
                         category,
                         sort_order,
                         enabled
@@ -2409,9 +2489,12 @@ app.patch(
                         max_level = $3,
                         density = $4,
                         safety_reserve = $5,
-                        category = $6,
-                        sort_order = $7,
-                        enabled = $8,
+                        feed_mode = $6,
+                        raw_concentration = $7,
+                        target_concentration = $8,
+                        category = $9,
+                        sort_order = $10,
+                        enabled = $11,
                         updated_at = NOW()
                     WHERE tank_no = $1
                     RETURNING
@@ -2420,6 +2503,9 @@ app.patch(
                         max_level,
                         density,
                         safety_reserve,
+                        feed_mode,
+                        raw_concentration,
+                        target_concentration,
                         category,
                         sort_order,
                         enabled
@@ -2430,6 +2516,9 @@ app.patch(
                         validation.data.maxLevel,
                         validation.data.density,
                         validation.data.safetyReserve,
+                        validation.data.feedMode,
+                        validation.data.rawConcentration,
+                        validation.data.targetConcentration,
                         validation.data.category,
                         validation.data.sortOrder,
                         req.body.enabled
