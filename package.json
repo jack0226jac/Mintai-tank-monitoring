@@ -1,6 +1,6 @@
 {
   "name": "tank-monitoring-system",
-  "version": "1.6.5",
+  "version": "1.6.6",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
