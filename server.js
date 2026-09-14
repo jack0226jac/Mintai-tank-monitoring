@@ -2186,6 +2186,10 @@ app.post(
                 maxLevel: item?.maxLevel,
                 density: item?.density,
                 safetyReserve: item?.safetyReserve,
+                feedMode: item?.feedMode,
+                rawConcentration: item?.rawConcentration,
+                rawConcentrations: item?.rawConcentrations,
+                targetConcentration: item?.targetConcentration,
                 category: item?.category,
                 sortOrder: item?.sortOrder
             });
