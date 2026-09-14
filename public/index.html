@@ -1268,7 +1268,7 @@
       <div
         style="margin-top:10px;font-size:10px;color:#aaa;text-align:center;"
       >
-        系統版本：v1.6.2（2026-09-14）
+        系統版本：v1.6.3（2026-09-14）
       </div>
 
     </div>
@@ -1488,17 +1488,17 @@
 
           <h3>🚛 供應廠商 / 標準車重設定</h3>
           <p style="font-size:12px;color:#666;">
-            只需建立「實際會供應該桶槽」的廠商。標準車重單位為噸/車。
+            先選擇廠商，再設定該廠商實際可供應的桶槽與標準車重。標準車重單位為噸/車。
           </p>
 
           <div class="settings-form truck-config-form">
             <div class="settings-field">
-              <label>桶槽</label>
-              <select id="truck-config-tank"></select>
-            </div>
-            <div class="settings-field">
               <label>廠商</label>
               <select id="truck-config-vendor"></select>
+            </div>
+            <div class="settings-field">
+              <label>桶槽</label>
+              <select id="truck-config-tank"></select>
             </div>
             <div class="settings-field">
               <label>標準車重 (t/車)</label>
@@ -1511,7 +1511,7 @@
             <table class="settings-table">
               <thead>
                 <tr>
-                  <th>桶槽</th><th>廠商</th><th>車重 t/車</th><th>啟用</th><th>儲存</th>
+                  <th>廠商</th><th>桶槽</th><th>車重 t/車</th><th>啟用</th><th>儲存</th>
                 </tr>
               </thead>
               <tbody id="admin-truck-config-body"></tbody>
@@ -5550,11 +5550,11 @@
       const body = document.getElementById('admin-truck-config-body');
       if (!tankSelect || !vendorSelect || !body) return;
 
-      tankSelect.innerHTML = tanks.filter(t => t.enabled).map(
-        t => `<option value="${escapeHtml(t.tankNo)}">${escapeHtml(t.tankNo)} - ${escapeHtml(t.product)}</option>`
-      ).join('');
       vendorSelect.innerHTML = vendors.filter(v => v.enabled).map(
         v => `<option value="${v.id}">${escapeHtml(v.vendorName)}</option>`
+      ).join('');
+      tankSelect.innerHTML = tanks.filter(t => t.enabled).map(
+        t => `<option value="${escapeHtml(t.tankNo)}">${escapeHtml(t.tankNo)} - ${escapeHtml(t.product)}</option>`
       ).join('');
 
       body.innerHTML = '';
@@ -5587,7 +5587,7 @@
           } catch (e) { alert(`⚠️ ${e.message}`); }
         };
         saveCell.appendChild(btn);
-        [tankCell,vendorCell,capCell,enableCell,saveCell].forEach(c=>row.appendChild(c));
+        [vendorCell,tankCell,capCell,enableCell,saveCell].forEach(c=>row.appendChild(c));
         body.appendChild(row);
       }
     }
@@ -5597,7 +5597,7 @@
       const vendorId = Number(document.getElementById('truck-config-vendor').value);
       const truckCapacityTon = Number(document.getElementById('truck-config-capacity').value);
       if (!tankNo || !vendorId || !Number.isFinite(truckCapacityTon) || truckCapacityTon <= 0) {
-        alert('⚠️ 請選擇桶槽、廠商並輸入正確的標準車重');
+        alert('⚠️ 請選擇廠商、桶槽並輸入正確的標準車重');
         return;
       }
       try {
