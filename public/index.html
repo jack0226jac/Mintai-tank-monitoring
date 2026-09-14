@@ -1271,7 +1271,7 @@
       <div
         style="margin-top:10px;font-size:10px;color:#aaa;text-align:center;"
       >
-        系統版本：v1.6.5（2026-09-14）
+        系統版本：v1.6.6（2026-09-14）
       </div>
 
     </div>
@@ -1521,6 +1521,15 @@
             <button class="settings-save-btn" onclick="saveVendorTruckBatch()">
               💾 儲存此廠商供應設定
             </button>
+          </div>
+
+          <h4 style="margin:24px 0 8px;">📋 已設定進料資料</h4>
+          <p style="font-size:12px;color:#666;margin-top:0;">可在此確認所有已啟用的廠商／桶槽設定；按「✏️ 修改」會自動切換到該廠商並帶出既有資料。</p>
+          <div class="settings-table-wrap">
+            <table class="settings-table">
+              <thead><tr><th>廠商</th><th>桶槽</th><th>品名</th><th>進料方式</th><th>車重 t/車</th><th>原料濃度 %</th><th>目標濃度 %</th><th>比重 t/m³</th><th>操作</th></tr></thead>
+              <tbody id="admin-truck-config-overview-body"></tbody>
+            </table>
           </div>
 
         </div>
@@ -3544,16 +3553,12 @@
       const current = Number(tank.currentLevel || 0);
       const max = Number(tank.maxLevel || 0);
       const reserve = Math.max(0, Number(tank.safetyReserve || 0));
-      const physicalRemaining = Math.max(0, max - current);
-      const usableVolume = Math.max(0, physicalRemaining - reserve);
+      const usableVolume = Math.max(0, max - current - reserve);
       const configs = vendorTankConfigs.filter(item => item.tankNo === tankNo && item.enabled !== false);
 
-      let html = '<div class="capacity-title">🚛 進料空間</div>';
-      html += `<div class="capacity-summary">剩餘體積：${physicalRemaining.toFixed(2)} m³</div>`;
-      if (reserve > 0) html += `<div>安全保留：${reserve.toFixed(2)} m³｜可用：${usableVolume.toFixed(2)} m³</div>`;
-
+      let html = '<div class="capacity-title">🚚 可進料</div>';
       if (!configs.length) {
-        html += '<div class="capacity-muted">尚未設定此桶槽的供應廠商與進料換算</div>';
+        html += '<div class="capacity-muted">尚未設定供應廠商</div>';
         container.innerHTML = html;
         return;
       }
@@ -3562,29 +3567,20 @@
       for (const cfg of configs) {
         const truckTon = Number(cfg.truckCapacityTon);
         const density = Number(cfg.finalDensity || tank.density);
-        if (!Number.isFinite(truckTon) || truckTon <= 0 || !Number.isFinite(density) || density <= 0) {
-          html += `<div class="capacity-vendor-row"><span>${escapeHtml(cfg.vendorName)}</span><strong>⚠️ 缺比重</strong></div>`;
-          continue;
-        }
+        if (!Number.isFinite(truckTon) || truckTon <= 0 || !Number.isFinite(density) || density <= 0) continue;
 
         let finalTon = truckTon;
-        let waterTon = 0;
-        let detail = '直接進料';
         if (cfg.feedMode === 'dilute') {
           const raw = Number(cfg.rawConcentration);
           const target = Number(cfg.targetConcentration);
-          if (!Number.isFinite(raw) || !Number.isFinite(target) || raw <= target || target <= 0) {
-            html += `<div class="capacity-vendor-row"><span>${escapeHtml(cfg.vendorName)}</span><strong>⚠️ 濃度設定錯誤</strong></div>`;
-            continue;
-          }
+          if (!Number.isFinite(raw) || !Number.isFinite(target) || raw <= target || target <= 0) continue;
           finalTon = truckTon * raw / target;
-          waterTon = finalTon - truckTon;
-          detail = `${raw.toFixed(1)}%→${target.toFixed(1)}%，加水 ${waterTon.toFixed(1)}t`;
         }
 
         const volumePerTruck = finalTon / density;
+        if (!Number.isFinite(volumePerTruck) || volumePerTruck <= 0) continue;
         const count = Math.max(0, Math.floor((usableVolume + 1e-9) / volumePerTruck));
-        html += `<div class="capacity-vendor-row"><span>${escapeHtml(cfg.vendorName)} ${truckTon.toFixed(1)}t/車｜${detail}｜${volumePerTruck.toFixed(2)}m³/車</span><strong>${count} 車</strong></div>`;
+        html += `<div class="capacity-vendor-row"><span>${escapeHtml(cfg.vendorName)}</span><strong>${count} 車</strong></div>`;
       }
       html += '</div>';
       container.innerHTML = html;
@@ -5571,6 +5567,32 @@
       }
 
       renderVendorTruckBatchRows();
+      renderTruckConfigOverview();
+    }
+
+    function renderTruckConfigOverview() {
+      const body = document.getElementById('admin-truck-config-overview-body');
+      if (!body) return;
+      const rows = adminTruckConfigs.filter(c => c.enabled !== false);
+      if (!rows.length) { body.innerHTML = '<tr><td colspan="9">目前尚未設定進料資料</td></tr>'; return; }
+      body.innerHTML = rows.map(cfg => {
+        const tank = adminTruckTanks.find(t => t.tankNo === cfg.tankNo);
+        const mode = cfg.feedMode === 'dilute' ? '稀釋進料' : '直接進料';
+        const raw = cfg.feedMode === 'dilute' && cfg.rawConcentration != null ? Number(cfg.rawConcentration).toFixed(2) : '—';
+        const target = cfg.feedMode === 'dilute' && cfg.targetConcentration != null ? Number(cfg.targetConcentration).toFixed(2) : '—';
+        const density = cfg.finalDensity != null ? Number(cfg.finalDensity).toFixed(3) : (tank?.density != null ? `${Number(tank.density).toFixed(3)}（預設）` : '—');
+        return `<tr><td>${escapeHtml(cfg.vendorName)}</td><td>${escapeHtml(cfg.tankNo)}</td><td>${escapeHtml(tank?.product || '')}</td><td>${mode}</td><td>${Number(cfg.truckCapacityTon).toFixed(2)}</td><td>${raw}</td><td>${target}</td><td>${density}</td><td><button class="settings-add-btn" onclick="editTruckConfig(${Number(cfg.vendorId)}, '${escapeHtml(cfg.tankNo)}')">✏️ 修改</button></td></tr>`;
+      }).join('');
+    }
+
+    function editTruckConfig(vendorId, tankNo) {
+      const select = document.getElementById('truck-config-vendor');
+      if (!select) return;
+      select.value = String(vendorId);
+      renderVendorTruckBatchRows();
+      const row = document.querySelector(`#admin-truck-batch-body tr[data-tank-no="${CSS.escape(tankNo)}"]`);
+      row?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (row) { row.style.outline = '3px solid rgba(25,118,210,.35)'; setTimeout(() => row.style.outline = '', 1800); }
     }
 
     function renderVendorTruckBatchRows() {
